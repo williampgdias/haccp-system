@@ -4,5 +4,5 @@ export interface TemperatureLog {
     value: number;
     status: 'SAFE' | 'DANGER';
     recordedBy: string;
-    createdAt: Date;
+    createdAt: string;
 }

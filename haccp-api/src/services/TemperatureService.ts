@@ -1,6 +1,6 @@
-import { TemperatureLog } from '../entities/TemperatureLog';
-import { TemperatureRepository } from '../repositories/TemperatureRepository';
 import { v4 as uuidv4 } from 'uuid';
+import { TemperatureLog } from '../entities/TemperatureLog.js';
+import { TemperatureRepository } from '../repositories/TemperatureRepository.js';
 
 export class TemperatureService {
     private repository = new TemperatureRepository();
@@ -10,22 +10,23 @@ export class TemperatureService {
         value: number,
         user: string,
     ): Promise<TemperatureLog> {
+        // HACCP Rule: Above 5°C in cooling equipment is a critical limit (Danger)
         const status = value > 5 ? 'DANGER' : 'SAFE';
 
         const newLog: TemperatureLog = {
-            id: Math.random().toString(36).substr(2, 9),
+            id: uuidv4(),
             equipmentId,
             value,
             status,
             recordedBy: user,
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
         };
 
         await this.repository.save(newLog);
         return newLog;
     }
 
-    async getAllLogs() {
+    async getAllLogs(): Promise<TemperatureLog[]> {
         return await this.repository.findAll();
     }
 }
