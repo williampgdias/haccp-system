@@ -9,12 +9,6 @@ export class TemperatureController {
         try {
             const { equipmentId, value, user } = req.body;
 
-            // Basic Validation
-            if (!equipmentId || value === undefined || !user) {
-                res.status(400).json({ error: 'Missing required fields' });
-                return;
-            }
-
             const log = await this.tempService.createLog(
                 equipmentId,
                 value,
