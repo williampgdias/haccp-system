@@ -1,4 +1,3 @@
-// src/middlewares/validateResource.ts
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
 
@@ -12,20 +11,21 @@ export const validate = (schema: ZodSchema) => {
             });
 
             next();
-        } catch (error) {
-            if (error instanceof ZodError) {
-                const validationError = error as any;
+        } catch (error: any) {
+            if (error instanceof ZodError || error.name === 'ZodError') {
+                const issues = error.errors || error.issues || [];
 
                 res.status(400).json({
                     error: 'Validation failed',
-                    details: validationError.errors.map((err: any) => ({
-                        field: err.path.join('.'),
+                    details: issues.map((err: any) => ({
+                        field: err.path ? err.path.join('.') : 'unknown',
                         message: err.message,
                     })),
                 });
                 return;
             }
 
+            console.error('Unexpected Validation Error:', error);
             res.status(500).json({
                 error: 'Internal server error during validation',
             });
