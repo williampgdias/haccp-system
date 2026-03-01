@@ -27,9 +27,19 @@ interface DeliveryRecord {
     signature: string;
 }
 
+interface CleaningRecord {
+    id: string;
+    createdAt: string;
+    weekEndingDate: string;
+    dateCleaned: string;
+    equipmentName: string;
+    cleanedBy: string;
+}
+
 // --- IN-MEMORY DATABASE (MVP) ---
 let dailyTemperatures: DailyTemperature[] = [];
 let deliveryRecords: DeliveryRecord[] = [];
+let cleaningRecords: CleaningRecord[] = [];
 
 // --- ROUTES FOR DAILY TEMPERATURES ---
 
@@ -102,6 +112,41 @@ app.post('/api/deliveries', (req: Request, res: Response) => {
     };
 
     deliveryRecords.push(recordToSave);
+    res.status(201).json(recordToSave);
+});
+
+// --- ROUTES FOR CLEANING SCHEDULE ---
+
+/**
+ * GET /api/cleaning
+ * Retrieves all saved cleaning records.
+ */
+app.get('/api/cleaning', (req: Request, res: Response) => {
+    res.status(200).json(cleaningRecords);
+});
+
+/**
+ * POST /api/cleaning
+ * Receives a new cleaning record from the frontend and saves it.
+ */
+app.post('/api/cleaning', (req: Request, res: Response) => {
+    const newRecord: Partial<CleaningRecord> = req.body;
+
+    if (!newRecord || Object.keys(newRecord).length === 0) {
+        res.status(400).json({ error: 'Missing cleaning data' });
+        return;
+    }
+
+    const recordToSave: CleaningRecord = {
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        weekEndingDate: newRecord.weekEndingDate || '',
+        dateCleaned: newRecord.dateCleaned || '',
+        equipmentName: newRecord.equipmentName || 'Unknown Equipment',
+        cleanedBy: newRecord.cleanedBy || '',
+    };
+
+    cleaningRecords.push(recordToSave);
     res.status(201).json(recordToSave);
 });
 
