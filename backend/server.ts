@@ -4,7 +4,6 @@ const app = express();
 app.use(express.json());
 
 // --- TYPES & INTERFACES ---
-// Defines the exact structure expected for a temperature record
 interface DailyTemperature {
     id: string;
     createdAt: string;
@@ -13,10 +12,26 @@ interface DailyTemperature {
     temperature: number;
 }
 
+interface DeliveryRecord {
+    id: string;
+    createdAt: string;
+    deliveryDate: string;
+    foodItem: string;
+    batchCode: string;
+    supplierName: string;
+    useByDate: string;
+    temperature: number;
+    isAppearanceAcceptable: boolean;
+    isVanChecked: boolean;
+    comments: string;
+    signature: string;
+}
+
 // --- IN-MEMORY DATABASE (MVP) ---
 let dailyTemperatures: DailyTemperature[] = [];
+let deliveryRecords: DeliveryRecord[] = [];
 
-// --- ROUTES ---
+// --- ROUTES FOR DAILY TEMPERATURES ---
 
 /**
  * GET /api/daily-temperatures
@@ -46,6 +61,47 @@ app.post('/api/daily-temperatures', (req: Request, res: Response) => {
     };
 
     dailyTemperatures.push(recordToSave);
+    res.status(201).json(recordToSave);
+});
+
+// --- ROUTES FOR DELIVERIES ---
+
+/**
+ * GET /api/deliveries
+ * Retrieves all saved delivery records.
+ */
+app.get('/api/deliveries', (req: Request, res: Response) => {
+    res.status(200).json(deliveryRecords);
+});
+
+/**
+ * POST /api/deliveries
+ * Receives a new delivery record from the frontend and saves it.
+ */
+app.post('/api/deliveries', (req: Request, res: Response) => {
+    const newRecord: Partial<DeliveryRecord> = req.body;
+
+    if (!newRecord || Object.keys(newRecord).length === 0) {
+        res.status(400).json({ error: 'Missing delivery data' });
+        return;
+    }
+
+    const recordToSave: DeliveryRecord = {
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        deliveryDate: newRecord.deliveryDate || '',
+        foodItem: newRecord.foodItem || '',
+        batchCode: newRecord.batchCode || '',
+        supplierName: newRecord.supplierName || '',
+        useByDate: newRecord.useByDate || '',
+        temperature: newRecord.temperature || 0,
+        isAppearanceAcceptable: newRecord.isAppearanceAcceptable || false,
+        isVanChecked: newRecord.isVanChecked || false,
+        comments: newRecord.comments || '',
+        signature: newRecord.signature || '',
+    };
+
+    deliveryRecords.push(recordToSave);
     res.status(201).json(recordToSave);
 });
 
