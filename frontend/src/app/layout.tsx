@@ -23,7 +23,6 @@ export default function RootLayout({
             >
                 {/* Sidebar / Top bar */}
                 <aside className="w-full lg:w-64 bg-slate-950 text-slate-300 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 shadow-xl z-10 shrink-0">
-                    {/* Logo Area: Left aligned on all screens */}
                     <div className="pt-5 px-6 lg:p-6">
                         <h1 className="text-2xl font-bold text-white tracking-wide">
                             HACCP Pro
