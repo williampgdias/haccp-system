@@ -1,11 +1,18 @@
-// backend/src/server.ts
-
+// backend/server.ts
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaClient } from './generated/prisma/client/index.js';
+
+const adapter = new PrismaBetterSqlite3({
+    url: process.env.DATABASE_URL || 'file:./dev.db',
+});
+const prisma = new PrismaClient({ adapter });
+// ====================================================
 
 const app = express();
-const prisma = new PrismaClient();
 const port = 3001;
 
 app.use(cors());
@@ -17,7 +24,6 @@ app.use(express.json());
 
 app.get('/api/daily-temperatures', async (req, res) => {
     try {
-        // Fetch all records from SQLite
         const records = await prisma.temperature.findMany();
         res.json(records);
     } catch (error) {
@@ -28,12 +34,9 @@ app.get('/api/daily-temperatures', async (req, res) => {
 app.post('/api/daily-temperatures', async (req, res) => {
     try {
         const { unitName, timeChecked, temperature } = req.body;
-
-        // Save the new record to the database
         const newRecord = await prisma.temperature.create({
             data: { unitName, timeChecked, temperature },
         });
-
         res.status(201).json(newRecord);
     } catch (error) {
         res.status(500).json({ error: 'Failed to save temperature' });
@@ -82,7 +85,6 @@ app.post('/api/deliveries', async (req, res) => {
                 signature,
             },
         });
-
         res.status(201).json(newRecord);
     } catch (error) {
         res.status(500).json({ error: 'Failed to save delivery' });
@@ -106,11 +108,9 @@ app.post('/api/cleaning', async (req, res) => {
     try {
         const { weekEndingDate, dateCleaned, equipmentName, cleanedBy } =
             req.body;
-
         const newRecord = await prisma.cleaning.create({
             data: { weekEndingDate, dateCleaned, equipmentName, cleanedBy },
         });
-
         res.status(201).json(newRecord);
     } catch (error) {
         res.status(500).json({ error: 'Failed to save cleaning record' });
@@ -122,6 +122,6 @@ app.post('/api/cleaning', async (req, res) => {
 // ==========================================
 app.listen(port, () => {
     console.log(
-        `🚀 Server is running on http://localhost:${port} with SQLite Database!`,
+        `🚀 Server is running on http://localhost:${port} with Prisma Driver Adapter!`,
     );
 });

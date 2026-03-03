@@ -1,0 +1,45 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Temperature Table
+model Temperature {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  unitName    String
+  timeChecked String
+  temperature Float
+}
+
+// Deliveries Table
+model Delivery {
+  id                     String   @id @default(uuid())
+  createdAt              DateTime @default(now())
+  deliveryDate           String
+  supplierName           String
+  foodItem               String
+  batchCode              String
+  useByDate              String
+  temperature            Float
+  isAppearanceAcceptable Boolean
+  isVanChecked           Boolean
+  comments               String?
+  signature              String
+}
+
+// Cleaning Schedule Table
+model Cleaning {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  weekEndingDate String
+  dateCleaned    String
+  equipmentName  String
+  cleanedBy      String
+}
