@@ -1,164 +1,127 @@
-import express, { type Request, type Response } from 'express';
+// backend/src/server.ts
+
+import express from 'express';
 import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
 
 const app = express();
+const prisma = new PrismaClient();
+const port = 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// --- TYPES & INTERFACES ---
-interface DailyTemperature {
-    id: string;
-    createdAt: string;
-    unitName: string;
-    timeChecked: string;
-    temperature: number;
-}
+// ==========================================
+// 🌡️ TEMPERATURE ROUTES
+// ==========================================
 
-interface DeliveryRecord {
-    id: string;
-    createdAt: string;
-    deliveryDate: string;
-    foodItem: string;
-    batchCode: string;
-    supplierName: string;
-    useByDate: string;
-    temperature: number;
-    isAppearanceAcceptable: boolean;
-    isVanChecked: boolean;
-    comments: string;
-    signature: string;
-}
-
-interface CleaningRecord {
-    id: string;
-    createdAt: string;
-    weekEndingDate: string;
-    dateCleaned: string;
-    equipmentName: string;
-    cleanedBy: string;
-}
-
-// --- IN-MEMORY DATABASE (MVP) ---
-let dailyTemperatures: DailyTemperature[] = [];
-let deliveryRecords: DeliveryRecord[] = [];
-let cleaningRecords: CleaningRecord[] = [];
-
-// --- ROUTES FOR DAILY TEMPERATURES ---
-
-/**
- * GET /api/daily-temperatures
- */
-app.get('/api/daily-temperatures', (req: Request, res: Response) => {
-    res.status(200).json(dailyTemperatures);
-});
-
-/**
- * POST /api/daily-temperatures
- */
-app.post('/api/daily-temperatures', (req: Request, res: Response) => {
-    const newRecord: Partial<DailyTemperature> = req.body;
-
-    if (!newRecord || Object.keys(newRecord).length === 0) {
-        res.status(400).json({ error: 'Missing record data' });
-        return;
+app.get('/api/daily-temperatures', async (req, res) => {
+    try {
+        // Fetch all records from SQLite
+        const records = await prisma.temperature.findMany();
+        res.json(records);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch temperatures' });
     }
-
-    //Creating the final object strictly following the DailyTemperature interface
-    const recordToSave: DailyTemperature = {
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        unitName: newRecord.unitName || 'Unknown Unit',
-        timeChecked: newRecord.timeChecked || '00:00',
-        temperature: newRecord.temperature || 0,
-    };
-
-    dailyTemperatures.push(recordToSave);
-    res.status(201).json(recordToSave);
 });
 
-// --- ROUTES FOR DELIVERIES ---
+app.post('/api/daily-temperatures', async (req, res) => {
+    try {
+        const { unitName, timeChecked, temperature } = req.body;
 
-/**
- * GET /api/deliveries
- * Retrieves all saved delivery records.
- */
-app.get('/api/deliveries', (req: Request, res: Response) => {
-    res.status(200).json(deliveryRecords);
-});
+        // Save the new record to the database
+        const newRecord = await prisma.temperature.create({
+            data: { unitName, timeChecked, temperature },
+        });
 
-/**
- * POST /api/deliveries
- * Receives a new delivery record from the frontend and saves it.
- */
-app.post('/api/deliveries', (req: Request, res: Response) => {
-    const newRecord: Partial<DeliveryRecord> = req.body;
-
-    if (!newRecord || Object.keys(newRecord).length === 0) {
-        res.status(400).json({ error: 'Missing delivery data' });
-        return;
+        res.status(201).json(newRecord);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save temperature' });
     }
-
-    const recordToSave: DeliveryRecord = {
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        deliveryDate: newRecord.deliveryDate || '',
-        foodItem: newRecord.foodItem || '',
-        batchCode: newRecord.batchCode || '',
-        supplierName: newRecord.supplierName || '',
-        useByDate: newRecord.useByDate || '',
-        temperature: newRecord.temperature || 0,
-        isAppearanceAcceptable: newRecord.isAppearanceAcceptable || false,
-        isVanChecked: newRecord.isVanChecked || false,
-        comments: newRecord.comments || '',
-        signature: newRecord.signature || '',
-    };
-
-    deliveryRecords.push(recordToSave);
-    res.status(201).json(recordToSave);
 });
 
-// --- ROUTES FOR CLEANING SCHEDULE ---
+// ==========================================
+// 📦 DELIVERY ROUTES
+// ==========================================
 
-/**
- * GET /api/cleaning
- * Retrieves all saved cleaning records.
- */
-app.get('/api/cleaning', (req: Request, res: Response) => {
-    res.status(200).json(cleaningRecords);
-});
-
-/**
- * POST /api/cleaning
- * Receives a new cleaning record from the frontend and saves it.
- */
-app.post('/api/cleaning', (req: Request, res: Response) => {
-    const newRecord: Partial<CleaningRecord> = req.body;
-
-    if (!newRecord || Object.keys(newRecord).length === 0) {
-        res.status(400).json({ error: 'Missing cleaning data' });
-        return;
+app.get('/api/deliveries', async (req, res) => {
+    try {
+        const records = await prisma.delivery.findMany();
+        res.json(records);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch deliveries' });
     }
-
-    const recordToSave: CleaningRecord = {
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        weekEndingDate: newRecord.weekEndingDate || '',
-        dateCleaned: newRecord.dateCleaned || '',
-        equipmentName: newRecord.equipmentName || 'Unknown Equipment',
-        cleanedBy: newRecord.cleanedBy || '',
-    };
-
-    cleaningRecords.push(recordToSave);
-    res.status(201).json(recordToSave);
 });
 
-// Health check route
-app.get('/api/health', (req: Request, res: Response) => {
-    res.status(200).json({ status: 'API is running properly' });
+app.post('/api/deliveries', async (req, res) => {
+    try {
+        const {
+            deliveryDate,
+            supplierName,
+            foodItem,
+            batchCode,
+            useByDate,
+            temperature,
+            isAppearanceAcceptable,
+            isVanChecked,
+            comments,
+            signature,
+        } = req.body;
+
+        const newRecord = await prisma.delivery.create({
+            data: {
+                deliveryDate,
+                supplierName,
+                foodItem,
+                batchCode,
+                useByDate,
+                temperature,
+                isAppearanceAcceptable,
+                isVanChecked,
+                comments,
+                signature,
+            },
+        });
+
+        res.status(201).json(newRecord);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save delivery' });
+    }
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// ==========================================
+// ✨ CLEANING ROUTES
+// ==========================================
+
+app.get('/api/cleaning', async (req, res) => {
+    try {
+        const records = await prisma.cleaning.findMany();
+        res.json(records);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch cleaning records' });
+    }
+});
+
+app.post('/api/cleaning', async (req, res) => {
+    try {
+        const { weekEndingDate, dateCleaned, equipmentName, cleanedBy } =
+            req.body;
+
+        const newRecord = await prisma.cleaning.create({
+            data: { weekEndingDate, dateCleaned, equipmentName, cleanedBy },
+        });
+
+        res.status(201).json(newRecord);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to save cleaning record' });
+    }
+});
+
+// ==========================================
+// STARTING THE SERVER
+// ==========================================
+app.listen(port, () => {
+    console.log(
+        `🚀 Server is running on http://localhost:${port} with SQLite Database!`,
+    );
 });
