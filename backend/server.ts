@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // ====================================================
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -117,7 +117,5 @@ app.post('/api/cleaning', async (req, res) => {
 // STARTING THE SERVER
 // ==========================================
 app.listen(port, () => {
-    console.log(
-        `🚀 Server is running on http://localhost:${port} with Prisma Driver Adapter!`,
-    );
+    console.log(`Server running on port ${port}`);
 });
