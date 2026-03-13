@@ -12,6 +12,8 @@ interface TemperatureRecord {
 }
 
 export default function TemperaturesPage() {
+    const API_BASE_URL = 'https://haccp-backend-djev.onrender.com/api';
+
     const [formData, setFormData] = useState({
         unitName: '',
         timeChecked: '',
@@ -24,10 +26,9 @@ export default function TemperaturesPage() {
 
     const fetchRecords = async () => {
         try {
-            const response = await fetch(
-                'http://localhost:3001/api/daily-temperatures',
-                { cache: 'no-store' },
-            );
+            const response = await fetch(`${API_BASE_URL}/daily-temperatures`, {
+                cache: 'no-store',
+            });
             if (response.ok) {
                 const data = await response.json();
                 const sortedData = data.sort(
@@ -80,18 +81,15 @@ export default function TemperaturesPage() {
         setStatusMessage('Saving...');
 
         try {
-            const response = await fetch(
-                'http://localhost:3001/api/daily-temperatures',
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        unitName: formData.unitName,
-                        timeChecked: formData.timeChecked,
-                        temperature: parseFloat(formData.temperature),
-                    }),
-                },
-            );
+            const response = await fetch(`${API_BASE_URL}/daily-temperatures`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    unitName: formData.unitName,
+                    timeChecked: formData.timeChecked,
+                    temperature: parseFloat(formData.temperature),
+                }),
+            });
 
             if (response.ok) {
                 setStatusMessage('✅ Success! Record saved.');

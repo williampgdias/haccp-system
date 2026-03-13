@@ -18,6 +18,8 @@ interface DeliveryRecord {
 }
 
 export default function DeliveriesPage() {
+    const API_BASE_URL = 'https://haccp-backend-djev.onrender.com/api';
+
     const [formData, setFormData] = useState({
         deliveryDate: '',
         supplierName: '',
@@ -37,12 +39,9 @@ export default function DeliveriesPage() {
 
     const fetchRecords = async () => {
         try {
-            const response = await fetch(
-                'http://localhost:3001/api/deliveries',
-                {
-                    cache: 'no-store',
-                },
-            );
+            const response = await fetch(`${API_BASE_URL}/deliveries`, {
+                cache: 'no-store',
+            });
             if (response.ok) {
                 const data = await response.json();
                 const sortedData = data.sort(
@@ -75,19 +74,16 @@ export default function DeliveriesPage() {
         setStatusMessage('Saving...');
 
         try {
-            const response = await fetch(
-                'http://localhost:3001/api/deliveries',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        ...formData,
-                        temperature: parseFloat(formData.temperature) || 0,
-                    }),
+            const response = await fetch(`${API_BASE_URL}/deliveries`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-            );
+                body: JSON.stringify({
+                    ...formData,
+                    temperature: parseFloat(formData.temperature) || 0,
+                }),
+            });
 
             if (response.ok) {
                 setStatusMessage('✅ Success! Delivery record saved.');

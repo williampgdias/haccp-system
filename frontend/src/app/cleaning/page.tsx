@@ -12,6 +12,8 @@ interface CleaningRecord {
 }
 
 export default function CleaningPage() {
+    const API_BASE_URL = 'https://haccp-backend-djev.onrender.com/api';
+
     const [formData, setFormData] = useState({
         weekEndingDate: '',
         dateCleaned: '',
@@ -25,7 +27,7 @@ export default function CleaningPage() {
 
     const fetchRecords = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/cleaning', {
+            const response = await fetch(`${API_BASE_URL}/cleaning`, {
                 cache: 'no-store',
             });
             if (response.ok) {
@@ -73,7 +75,7 @@ export default function CleaningPage() {
         setStatusMessage('Saving...');
 
         try {
-            const response = await fetch('http://localhost:3001/api/cleaning', {
+            const response = await fetch(`${API_BASE_URL}/cleaning`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
