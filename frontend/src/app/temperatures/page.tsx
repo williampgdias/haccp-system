@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../services/api';
 
 interface TemperatureRecord {
     id: string;
@@ -12,8 +13,6 @@ interface TemperatureRecord {
 }
 
 export default function TemperaturesPage() {
-    const API_BASE_URL = 'https://haccp-backend-djev.onrender.com/api';
-
     const [formData, setFormData] = useState({
         unitName: '',
         timeChecked: '',

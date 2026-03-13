@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '../../services/api';
 
 interface DeliveryRecord {
     id: string;
@@ -18,8 +19,6 @@ interface DeliveryRecord {
 }
 
 export default function DeliveriesPage() {
-    const API_BASE_URL = 'https://haccp-backend-djev.onrender.com/api';
-
     const [formData, setFormData] = useState({
         deliveryDate: '',
         supplierName: '',
