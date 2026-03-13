@@ -2,11 +2,10 @@
 
 generator client {
   provider        = "prisma-client-js"
-  output          = "../generated/prisma/client"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // Temperature Table
