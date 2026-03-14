@@ -175,6 +175,23 @@ app.post('/api/cleaning', async (req, res) => {
     }
 });
 
+app.put('/api/cleaning/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { weekEndingDate, dateCleaned, equipmentName, cleanedBy } =
+            req.body;
+
+        const updatedRecord = await prisma.cleaning.update({
+            where: { id: id },
+            data: { weekEndingDate, dateCleaned, equipmentName, cleanedBy },
+        });
+        res.status(200).json(updatedRecord);
+    } catch (error) {
+        console.error('Error updating cleaning:', error);
+        res.status(500).json({ error: 'Failed to update cleaning record' });
+    }
+});
+
 // ==========================================
 // STARTING THE SERVER
 // ==========================================
