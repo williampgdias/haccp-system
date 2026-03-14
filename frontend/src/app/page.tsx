@@ -2,6 +2,7 @@
 
 'use client';
 
+import { API_BASE_URL } from '../services/api';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
@@ -20,13 +21,13 @@ export default function Home() {
             try {
                 const [tempsRes, deliveriesRes, cleaningsRes] =
                     await Promise.all([
-                        fetch('http://localhost:3001/api/daily-temperatures', {
+                        fetch(`${API_BASE_URL}/daily-temperatures`, {
                             cache: 'no-store',
                         }),
-                        fetch('http://localhost:3001/api/deliveries', {
+                        fetch(`${API_BASE_URL}/deliveries`, {
                             cache: 'no-store',
                         }),
-                        fetch('http://localhost:3001/api/cleaning', {
+                        fetch(`${API_BASE_URL}/cleaning`, {
                             cache: 'no-store',
                         }),
                     ]);
@@ -160,7 +161,7 @@ export default function Home() {
             </div>
 
             {/* --- RECENT ACTIVITY --- */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[300px]">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-75">
                 <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                     ⚡ Recent Activity
                 </h3>
