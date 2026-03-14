@@ -110,6 +110,45 @@ app.post('/api/deliveries', async (req, res) => {
     }
 });
 
+app.put('/api/deliveries/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            deliveryDate,
+            supplierName,
+            foodItem,
+            batchCode,
+            useByDate,
+            temperature,
+            isAppearanceAcceptable,
+            isVanChecked,
+            comments,
+            signature,
+        } = req.body;
+
+        const updatedRecord = await prisma.delivery.update({
+            where: { id: id },
+            data: {
+                deliveryDate,
+                supplierName,
+                foodItem,
+                batchCode,
+                useByDate,
+                temperature,
+                isAppearanceAcceptable,
+                isVanChecked,
+                comments,
+                signature,
+            },
+        });
+
+        res.status(200).json(updatedRecord);
+    } catch (error) {
+        console.error('Error updating delivery:', error);
+        res.status(500).json({ error: 'Failed to update delivery record' });
+    }
+});
+
 // ==========================================
 // ✨ CLEANING ROUTES
 // ==========================================
