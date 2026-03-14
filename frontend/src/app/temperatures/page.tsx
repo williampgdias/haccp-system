@@ -23,6 +23,9 @@ export default function TemperaturesPage() {
     const [records, setRecords] = useState<TemperatureRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // State to track if the user is editing and existing record
+    const [editingId, setEditingId] = useState<string | null>(null);
+
     const fetchRecords = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/daily-temperatures`, {
@@ -48,6 +51,26 @@ export default function TemperaturesPage() {
         fetchRecords();
     }, []);
 
+    // Populates the form with the selected record data
+    const handleEditClick = (record: TemperatureRecord) => {
+        setEditingId(record.id);
+        setFormData({
+            unitName: record.unitName,
+            timeChecked: record.timeChecked,
+            temperature: record.temperature.toString(),
+        });
+        setStatusMessage('');
+        // Smooth scroll to the top where the firm is
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Cancels the edit mode and resets the form
+    const cancelEdit = () => {
+        setEditingId(null);
+        setFormData({ unitName: '', timeChecked: '', temperature: '' });
+        setStatusMessage('');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -56,6 +79,9 @@ export default function TemperaturesPage() {
         const todayStr = new Date().toLocaleDateString();
 
         const hasDuplicate = records.some((record) => {
+            // If the user is editing, ignore the record that is currently updating
+            if (editingId && record.id === editingId) return false;
+
             const recordDateStr = new Date(
                 record.createdAt,
             ).toLocaleDateString();
@@ -77,11 +103,17 @@ export default function TemperaturesPage() {
             return;
         }
 
-        setStatusMessage('Saving...');
+        setStatusMessage(editingId ? 'Updating...' : 'Saving...');
 
         try {
-            const response = await fetch(`${API_BASE_URL}/daily-temperatures`, {
-                method: 'POST',
+            // Decide whether to use POST (create) or PUT (update) based on state
+            const method = editingId ? 'PUT' : 'POST';
+            const endpoint = editingId
+                ? `${API_BASE_URL}/daily-temperatures/${editingId}`
+                : `${API_BASE_URL}/daily-temperatures`;
+
+            const response = await fetch(endpoint, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     unitName: formData.unitName,
@@ -91,8 +123,12 @@ export default function TemperaturesPage() {
             });
 
             if (response.ok) {
-                setStatusMessage('✅ Success! Record saved.');
-                setFormData({ unitName: '', timeChecked: '', temperature: '' });
+                setStatusMessage(
+                    editingId
+                        ? '✅ Success! Record updated.'
+                        : '✅ Success! Record saved.',
+                );
+                cancelEdit();
                 fetchRecords();
                 setTimeout(() => setStatusMessage(''), 3000);
             } else {
@@ -146,9 +182,13 @@ export default function TemperaturesPage() {
 
     return (
         <div className="max-w-4xl mx-auto mt-4 space-y-8">
-            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
+            <div
+                className={`p-6 md:p-8 rounded-xl shadow-sm border ${editingId ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}
+            >
                 <h2 className="text-2xl font-bold text-slate-800 mb-6">
-                    🌡️ Log Daily Temperature
+                    {editingId
+                        ? '✏️ Edit Temperature Record'
+                        : '🌡️ Log Daily Temperature'}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -161,7 +201,7 @@ export default function TemperaturesPage() {
                             value={formData.unitName}
                             onChange={handleChange}
                             required
-                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
+                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                         >
                             <option value="">Select a unit...</option>
                             <option value="Kitchen Fridge 1">
@@ -196,7 +236,7 @@ export default function TemperaturesPage() {
                                 value={formData.timeChecked}
                                 onChange={handleChange}
                                 required
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                             />
                         </div>
 
@@ -212,17 +252,29 @@ export default function TemperaturesPage() {
                                 onChange={handleChange}
                                 required
                                 placeholder="e.g. 3.5"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                             />
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors active:scale-95"
-                    >
-                        Save Record
-                    </button>
+                    <div className="flex gap-4 mt-4">
+                        <button
+                            type="submit"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors active:scale-95"
+                        >
+                            {editingId ? 'Update Record' : 'Save Record'}
+                        </button>
+
+                        {editingId && (
+                            <button
+                                type="button"
+                                onClick={cancelEdit}
+                                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-lg transition-colors active:scale-95"
+                            >
+                                Cancel Edit
+                            </button>
+                        )}
+                    </div>
 
                     {statusMessage && (
                         <p
@@ -273,7 +325,7 @@ export default function TemperaturesPage() {
                                                         ☀️ Morning
                                                     </span>
                                                     {checks.morning ? (
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-2">
                                                             <span className="text-xs text-slate-400 font-medium">
                                                                 {
                                                                     checks
@@ -282,7 +334,7 @@ export default function TemperaturesPage() {
                                                                 }
                                                             </span>
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${checks.morning.temperature > 8 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${checks.morning.temperature > 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                             >
                                                                 {
                                                                     checks
@@ -291,6 +343,17 @@ export default function TemperaturesPage() {
                                                                 }
                                                                 ºC
                                                             </span>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleEditClick(
+                                                                        checks.morning!,
+                                                                    )
+                                                                }
+                                                                className="ml-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                                                title="Edit Record"
+                                                            >
+                                                                ✏️
+                                                            </button>
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-slate-400 italic bg-slate-100 px-2 py-1 rounded">
@@ -304,7 +367,7 @@ export default function TemperaturesPage() {
                                                         🌙 Afternoon
                                                     </span>
                                                     {checks.afternoon ? (
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-2">
                                                             <span className="text-xs text-slate-400 font-medium">
                                                                 {
                                                                     checks
@@ -313,7 +376,7 @@ export default function TemperaturesPage() {
                                                                 }
                                                             </span>
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${checks.afternoon.temperature > 8 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${checks.afternoon.temperature > 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                             >
                                                                 {
                                                                     checks
@@ -322,6 +385,17 @@ export default function TemperaturesPage() {
                                                                 }
                                                                 ºC
                                                             </span>
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleEditClick(
+                                                                        checks.afternoon!,
+                                                                    )
+                                                                }
+                                                                className="ml-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                                                title="Edit Record"
+                                                            >
+                                                                ✏️
+                                                            </button>
                                                         </div>
                                                     ) : (
                                                         <span className="text-xs text-slate-400 italic bg-slate-100 px-2 py-1 rounded">
