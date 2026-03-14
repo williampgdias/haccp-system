@@ -44,6 +44,24 @@ app.post('/api/daily-temperatures', async (req, res) => {
     }
 });
 
+// Update an existing temperature record
+app.put('/api/daily-temperatures/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { unitName, timeChecked, temperature } = req.body;
+
+        const updatedRecord = await prisma.temperature.update({
+            where: { id: id },
+            data: { unitName, timeChecked, temperature },
+        });
+
+        res.status(200).json(updatedRecord);
+    } catch (error) {
+        console.error('Error updating temperature:', error);
+        res.status(500).json({ error: 'Failed to update temperature record' });
+    }
+});
+
 // ==========================================
 // 📦 DELIVERY ROUTES
 // ==========================================

@@ -234,7 +234,7 @@ export default function CleaningPage() {
                         {records.map((record) => (
                             <div
                                 key={record.id}
-                                className="border border-slate-200 rounded-xl p-5 bg-slate-50 hover:shadow-sm transition-shadow flex flex-col justify-between min-h-[140px]"
+                                className="border border-slate-200 rounded-xl p-5 bg-slate-50 hover:shadow-sm transition-shadow flex flex-col justify-between min-h-35"
                             >
                                 <div>
                                     <h5 className="font-bold text-slate-800 text-lg mb-1">
