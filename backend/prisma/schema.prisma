@@ -10,35 +10,36 @@ datasource db {
 
 // Temperature Table
 model Temperature {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  unitName    String
-  timeChecked String
-  temperature Float
+  id                        String   @id @default(uuid())
+  createdAt                 DateTime @default(now())
+  unitName                  String
+  timeChecked               String
+  temperature               Float
+  rinseTemperature          Float?
 }
 
 // Deliveries Table
 model Delivery {
-  id                     String   @id @default(uuid())
-  createdAt              DateTime @default(now())
-  deliveryDate           String
-  supplierName           String
-  foodItem               String
-  batchCode              String
-  useByDate              String
-  temperature            Float
-  isAppearanceAcceptable Boolean
-  isVanChecked           Boolean
-  comments               String?
-  signature              String
+  id                        String   @id @default(uuid())
+  createdAt                 DateTime @default(now())
+  deliveryDate              String
+  supplierName              String
+  foodItem                  String
+  batchCode                 String
+  useByDate                 String
+  temperature               Float
+  isAppearanceAcceptable    Boolean
+  isVanChecked              Boolean
+  comments                  String?
+  signature                 String
 }
 
 // Cleaning Schedule Table
 model Cleaning {
-  id             String   @id @default(uuid())
-  createdAt      DateTime @default(now())
-  weekEndingDate String
-  dateCleaned    String
-  equipmentName  String
-  cleanedBy      String
+  id                        String   @id @default(uuid())
+  createdAt                 DateTime @default(now())
+  weekEndingDate            String
+  dateCleaned               String
+  equipmentName             String
+  cleanedBy                 String
 }

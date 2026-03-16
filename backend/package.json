@@ -12,14 +12,18 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@neondatabase/serverless": "^1.0.2",
         "@prisma/adapter-better-sqlite3": "^7.4.2",
+        "@prisma/adapter-neon": "^7.5.0",
         "@prisma/adapter-pg": "^7.5.0",
         "@prisma/client": "^7.5.0",
+        "@prisma/config": "^7.5.0",
         "better-sqlite3": "^12.6.2",
         "cors": "^2.8.6",
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
-        "pg": "^8.20.0"
+        "pg": "^8.20.0",
+        "ws": "^8.19.0"
     },
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
@@ -27,6 +31,7 @@
         "@types/express": "^5.0.6",
         "@types/node": "^25.3.3",
         "@types/pg": "^8.18.0",
+        "@types/ws": "^8.18.1",
         "prisma": "^7.5.0",
         "ts-node": "^10.9.2",
         "tsx": "^4.21.0",

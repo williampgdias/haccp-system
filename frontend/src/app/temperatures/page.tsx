@@ -1,4 +1,3 @@
-// frontend/src/app/temperatures/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +9,7 @@ interface TemperatureRecord {
     unitName: string;
     timeChecked: string;
     temperature: number;
+    rinseTemperature?: number;
 }
 
 export default function TemperaturesPage() {
@@ -17,6 +17,7 @@ export default function TemperaturesPage() {
         unitName: '',
         timeChecked: '',
         temperature: '',
+        rinseTemperature: '',
     });
 
     const [statusMessage, setStatusMessage] = useState('');
@@ -58,6 +59,7 @@ export default function TemperaturesPage() {
             unitName: record.unitName,
             timeChecked: record.timeChecked,
             temperature: record.temperature.toString(),
+            rinseTemperature: record.temperature.toString(),
         });
         setStatusMessage('');
         // Smooth scroll to the top where the firm is
@@ -67,7 +69,12 @@ export default function TemperaturesPage() {
     // Cancels the edit mode and resets the form
     const cancelEdit = () => {
         setEditingId(null);
-        setFormData({ unitName: '', timeChecked: '', temperature: '' });
+        setFormData({
+            unitName: '',
+            timeChecked: '',
+            temperature: '',
+            rinseTemperature: '',
+        });
         setStatusMessage('');
     };
 
@@ -106,7 +113,6 @@ export default function TemperaturesPage() {
         setStatusMessage(editingId ? 'Updating...' : 'Saving...');
 
         try {
-            // Decide whether to use POST (create) or PUT (update) based on state
             const method = editingId ? 'PUT' : 'POST';
             const endpoint = editingId
                 ? `${API_BASE_URL}/daily-temperatures/${editingId}`
@@ -119,6 +125,9 @@ export default function TemperaturesPage() {
                     unitName: formData.unitName,
                     timeChecked: formData.timeChecked,
                     temperature: parseFloat(formData.temperature),
+                    rinseTemperature: formData.rinseTemperature
+                        ? parseFloat(formData.rinseTemperature)
+                        : null,
                 }),
             });
 
@@ -238,12 +247,21 @@ export default function TemperaturesPage() {
                             <option value="Kitchen Freezer">
                                 Kitchen Freezer
                             </option>
-                            <option value="Dishwasher - Wash Cycle">
-                                Dishwasher - Wash Cycle
-                            </option>
-                            <option value="Dishwasher - Rinse Cycle">
-                                Dishwasher - Rinse Cycle
-                            </option>
+                            {!editingId && (
+                                <option value="Dishwasher">
+                                    Dishwasher (Wash & Rinse Cycles)
+                                </option>
+                            )}
+                            {editingId && (
+                                <option value="Dishwasher - Wash Cycle">
+                                    Dishwasher - Wash Cycle
+                                </option>
+                            )}
+                            {editingId && (
+                                <option value="Dishwasher - Rinse Cycle">
+                                    Dishwasher - Rinse Cycle
+                                </option>
+                            )}
                         </select>
                     </div>
 
@@ -262,21 +280,56 @@ export default function TemperaturesPage() {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Temp (°C)
-                            </label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                name="temperature"
-                                value={formData.temperature}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. 3.5"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
+                        {formData.unitName === 'Dishwasher' && !editingId ? (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        Wash Temp (ºC)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        name="temperature"
+                                        value={formData.temperature}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="e.g. 60.0"
+                                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        Rinse Temp (°C)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        name="rinseTemperature"
+                                        value={formData.rinseTemperature}
+                                        onChange={handleChange}
+                                        required
+                                        placeholder="e.g. 82.5"
+                                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                    Temp (°C)
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    name="temperature"
+                                    value={formData.temperature}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="e.g. 3.5"
+                                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex gap-4 mt-4">
@@ -356,8 +409,14 @@ export default function TemperaturesPage() {
                                                                 }
                                                             </span>
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning(unitName, checks.morning.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning(unitName === 'Dishwasher' ? 'wash cycle' : unitName, checks.morning.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                             >
+                                                                {unitName ===
+                                                                    'Dishwasher' && (
+                                                                    <span className="text-xs font-normal mr-1">
+                                                                        Wash:
+                                                                    </span>
+                                                                )}
                                                                 {
                                                                     checks
                                                                         .morning
@@ -365,6 +424,22 @@ export default function TemperaturesPage() {
                                                                 }
                                                                 ºC
                                                             </span>
+                                                            {checks.morning
+                                                                .rinseTemperature && (
+                                                                <span
+                                                                    className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning('rinse cycle', checks.morning.rinseTemperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                >
+                                                                    <span className="text-xs font-normal mr-1">
+                                                                        Rinse:
+                                                                    </span>
+                                                                    {
+                                                                        checks
+                                                                            .morning
+                                                                            .rinseTemperature
+                                                                    }
+                                                                    ºC
+                                                                </span>
+                                                            )}
                                                             <button
                                                                 onClick={() =>
                                                                     handleEditClick(
@@ -398,8 +473,14 @@ export default function TemperaturesPage() {
                                                                 }
                                                             </span>
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning(unitName, checks.afternoon.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning(unitName === 'Dishwasher' ? 'wash cycle' : unitName, checks.afternoon.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                             >
+                                                                {unitName ===
+                                                                    'Dishwasher' && (
+                                                                    <span className="text-xs font-normal mr-1">
+                                                                        Wash:
+                                                                    </span>
+                                                                )}
                                                                 {
                                                                     checks
                                                                         .afternoon
@@ -407,6 +488,23 @@ export default function TemperaturesPage() {
                                                                 }
                                                                 ºC
                                                             </span>
+
+                                                            {checks.afternoon
+                                                                .rinseTemperature && (
+                                                                <span
+                                                                    className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning('rinse cycle', checks.afternoon.rinseTemperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                >
+                                                                    <span className="text-xs font-normal mr-1">
+                                                                        Rinse:
+                                                                    </span>
+                                                                    {
+                                                                        checks
+                                                                            .afternoon
+                                                                            .rinseTemperature
+                                                                    }
+                                                                    ºC
+                                                                </span>
+                                                            )}
                                                             <button
                                                                 onClick={() =>
                                                                     handleEditClick(

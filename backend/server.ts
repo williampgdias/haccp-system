@@ -34,12 +34,14 @@ app.get('/api/daily-temperatures', async (req, res) => {
 
 app.post('/api/daily-temperatures', async (req, res) => {
     try {
-        const { unitName, timeChecked, temperature } = req.body;
+        const { unitName, timeChecked, temperature, rinseTemperature } =
+            req.body;
         const newRecord = await prisma.temperature.create({
-            data: { unitName, timeChecked, temperature },
+            data: { unitName, timeChecked, temperature, rinseTemperature },
         });
         res.status(201).json(newRecord);
     } catch (error) {
+        console.error('ERRO AO SALVAR:', error);
         res.status(500).json({ error: 'Failed to save temperature' });
     }
 });
@@ -48,11 +50,12 @@ app.post('/api/daily-temperatures', async (req, res) => {
 app.put('/api/daily-temperatures/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { unitName, timeChecked, temperature } = req.body;
+        const { unitName, timeChecked, temperature, rinseTemperature } =
+            req.body;
 
         const updatedRecord = await prisma.temperature.update({
             where: { id: id },
-            data: { unitName, timeChecked, temperature },
+            data: { unitName, timeChecked, temperature, rinseTemperature },
         });
 
         res.status(200).json(updatedRecord);
