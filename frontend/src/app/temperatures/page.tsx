@@ -180,6 +180,28 @@ export default function TemperaturesPage() {
         >,
     );
 
+    const isTempWarning = (unitName: string, temp: number) => {
+        const name = unitName.toLocaleLowerCase();
+
+        // Freezer: Should be -18ºC or colder
+        if (name.includes('freezer')) {
+            return temp > -15;
+        }
+
+        // Dishwasher Wash Cycle: Needs to be above 60ºC
+        if (name.includes('wash cycle')) {
+            return temp < 60;
+        }
+
+        // Dishwasher Rinse Cycle: Needs to be above 82ºC to sanitize
+        if (name.includes('rinse cycle')) {
+            return temp < 82;
+        }
+
+        // Default for Fridges: Safe between 0ºC and 5ºC
+        return temp > 6;
+    };
+
     return (
         <div className="max-w-4xl mx-auto mt-4 space-y-8">
             <div
@@ -334,7 +356,7 @@ export default function TemperaturesPage() {
                                                                 }
                                                             </span>
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${checks.morning.temperature > 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning(unitName, checks.morning.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                             >
                                                                 {
                                                                     checks
@@ -376,7 +398,7 @@ export default function TemperaturesPage() {
                                                                 }
                                                             </span>
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${checks.afternoon.temperature > 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning(unitName, checks.afternoon.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                             >
                                                                 {
                                                                     checks
