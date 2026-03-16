@@ -43,3 +43,23 @@ model Cleaning {
   equipmentName             String
   cleanedBy                 String
 }
+
+model CookingLog {
+  id                        String   @id @default(uuid())
+  createdAt                 DateTime @default(now())
+  foodItem                  String
+  initials                  String
+  
+  // Cooking
+  cookTemp                  Float?
+  cookTime                  String?
+  
+  // Reheating
+  reheatTemp                Float?
+  reheatTime                String?
+  
+  // Cooling (The 120min rule)
+  coolingStartTime          String?
+  coolingFinishTime         String?
+  coolingFinalTemp          Float?
+}

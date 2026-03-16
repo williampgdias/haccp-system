@@ -196,6 +196,44 @@ app.put('/api/cleaning/:id', async (req, res) => {
 });
 
 // ==========================================
+// ✨ COOKING LOG ROUTES
+// ==========================================
+app.get('/cooking-logs', async (req, res) => {
+    try {
+        const logs = await prisma.cookingLog.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch logs' });
+    }
+});
+
+app.post('/cooking-logs', async (req, res) => {
+    try {
+        const log = await prisma.cookingLog.create({
+            data: req.body,
+        });
+        res.json(log);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create log' });
+    }
+});
+
+app.put('/cooking-logs/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const updated = await prisma.cookingLog.update({
+            where: { id },
+            data: req.body,
+        });
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update log' });
+    }
+});
+
+// ==========================================
 // STARTING THE SERVER
 // ==========================================
 app.listen(port, () => {
