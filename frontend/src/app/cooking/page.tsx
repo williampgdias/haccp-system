@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-// Mesma interface para manter a integridade com o Prisma
 interface CookingLog {
     id: string;
     foodItem: string;
@@ -25,10 +24,20 @@ export default function CookingPage() {
         type: 'cook',
     });
 
+    const [coolingTemps, setCoolingTemps] = useState<Record<string, string>>(
+        {},
+    );
+
+    const API_URL = 'http://localhost:3001/cooking-logs';
+
     const fetchLogs = async () => {
-        const res = await fetch('http://localhost:3001/cooking-logs');
-        const data = await res.json();
-        setLogs(data);
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            setLogs(data);
+        } catch (error) {
+            console.error('Error to upload logs', error);
+        }
     };
 
     useEffect(() => {
@@ -50,7 +59,7 @@ export default function CookingPage() {
             [formData.type === 'cook' ? 'cookTime' : 'reheatTime']: now,
         };
 
-        const res = await fetch('http://localhost:3001/cooking-logs', {
+        const res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -62,17 +71,54 @@ export default function CookingPage() {
         }
     };
 
+    const startCooling = async (id: string) => {
+        const now = new Date().toLocaleDateString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+        const res = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coolingStartTime: now }),
+        });
+
+        if (res.ok) fetchLogs();
+    };
+
+    const finishCooling = async (id: string) => {
+        const finalTemp = parseFloat(coolingTemps[id]);
+        if (isNaN(finalTemp)) {
+            alert('Please enter a valid final temperature.');
+            return;
+        }
+
+        const now = new Date().toLocaleDateString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+        const res = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                coolingFinishTime: now,
+                coolingFinalTemp: finalTemp,
+            }),
+        });
+
+        if (res.ok) fetchLogs();
+    };
+
     return (
         <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans">
             <div className="max-w-5xl mx-auto">
-                {/* HEADER NO PADRÃO */}
+                {/* HEADER */}
                 <header className="mb-8">
                     <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         👨‍🍳 Cooking & Cooling Control
                     </h1>
                 </header>
 
-                {/* FORMULÁRIO ESTILO "LOG DAILY TEMPERATURE" */}
+                {/* FORM */}
                 <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
                     <div className="flex items-center gap-2 mb-6 text-slate-800 font-semibold">
                         <span className="text-lg">🍗</span> New Cooking Entry
@@ -80,7 +126,7 @@ export default function CookingPage() {
 
                     <form
                         onSubmit={handleSubmit}
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-center"
                     >
                         <div className="lg:col-span-2">
                             <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -145,7 +191,7 @@ export default function CookingPage() {
                             <input
                                 type="number"
                                 step="0.1"
-                                className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none"
+                                className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="75.0"
                                 value={formData.temp}
                                 onChange={(e) =>
@@ -158,7 +204,7 @@ export default function CookingPage() {
                             />
                         </div>
 
-                        <div className="lg:col-span-5 flex justify-end">
+                        <div className="lg:col-span-5 flex justify-end mt-2">
                             <button className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all shadow-md active:scale-95">
                                 Save Record
                             </button>
@@ -166,7 +212,7 @@ export default function CookingPage() {
                     </form>
                 </section>
 
-                {/* LISTA DE ATIVIDADE - ESTILO DASHBOARD */}
+                {/* CARDS LIST */}
                 <div className="space-y-4">
                     <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                         📋 Today's Activity
@@ -176,9 +222,10 @@ export default function CookingPage() {
                         {logs.map((log) => (
                             <div
                                 key={log.id}
-                                className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                                className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
                             >
-                                <div className="flex justify-between items-start">
+                                {/* CARD HEADER */}
+                                <div className="flex justify-between items-start mb-4">
                                     <div>
                                         <h3 className="font-bold text-slate-800 text-lg">
                                             {log.foodItem}
@@ -188,24 +235,104 @@ export default function CookingPage() {
                                                 By {log.initials}
                                             </span>
                                             <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold uppercase">
+                                                {log.cookTemp
+                                                    ? 'Cooked'
+                                                    : 'Reheated'}
+                                                :
                                                 {log.cookTime || log.reheatTime}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="bg-green-50 px-3 py-1 rounded-lg border border-green-100">
+                                    <div className="bg-green-50 px-3 py-1 rounded-lg border border-green-100 text-right">
                                         <span className="text-green-700 font-black text-xl">
                                             {log.cookTemp || log.reheatTemp}°C
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">
-                                        Status: Done ✅
-                                    </span>
-                                    <button className="text-blue-600 text-xs font-bold hover:underline">
-                                        Start Cooling ❄️
-                                    </button>
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                    {!log.coolingStartTime && (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">
+                                                Status: Hot 🔥
+                                            </span>
+                                            <button
+                                                onClick={() =>
+                                                    startCooling(log.id)
+                                                }
+                                                className="bg-blue-50 text-blue-600 px-4 py-2 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors"
+                                            >
+                                                Start Cooling ❄️
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {log.coolingStartTime &&
+                                        !log.coolingFinishTime && (
+                                            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <span className="text-xs font-bold text-blue-700 uppercase tracking-tight flex items-center gap-1">
+                                                        ⏳ Cooling Started at{' '}
+                                                        {log.coolingStartTime}
+                                                    </span>
+                                                    <span className="text-[10px] text-blue-500 font-medium">
+                                                        Max 120 mins
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        step="0.1"
+                                                        placeholder="Final Temp (≤ 5°C)"
+                                                        className="flex-1 p-2 text-sm border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-400"
+                                                        value={
+                                                            coolingTemps[
+                                                                log.id
+                                                            ] || ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            setCoolingTemps({
+                                                                ...coolingTemps,
+                                                                [log.id]:
+                                                                    e.target
+                                                                        .value,
+                                                            })
+                                                        }
+                                                    />
+                                                    <button
+                                                        onClick={() =>
+                                                            finishCooling(
+                                                                log.id,
+                                                            )
+                                                        }
+                                                        className="bg-blue-600 text-white px-4 py-2 text-xs font-bold rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                                                    >
+                                                        Finish
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                    {/* COOLING DONE */}
+                                    {log.coolingFinishTime && (
+                                        <div className="bg-green-50 rounded-lg p-3 border border-green-100 flex justify-between items-center">
+                                            <div>
+                                                <span className="text-xs font-bold text-green-700 uppercase tracking-tight block">
+                                                    ✅ Cooling Complete
+                                                </span>
+                                                <span className="text-[10px] text-green-600 font-medium">
+                                                    {log.coolingStartTime} ➔{' '}
+                                                    {log.coolingFinishTime}
+                                                </span>
+                                            </div>
+                                            <div className="bg-white px-3 py-1 rounded border border-green-200 shadow-sm">
+                                                <span className="text-green-700 font-black text-lg">
+                                                    {log.coolingFinalTemp}ºC
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
