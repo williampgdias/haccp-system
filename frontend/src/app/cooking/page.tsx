@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
+// Interface matches the Prisma Schema
 interface CookingLog {
     id: string;
     foodItem: string;
@@ -30,13 +31,14 @@ export default function CookingPage() {
 
     const API_URL = 'http://localhost:3001/cooking-logs';
 
+    // Fetch logs from the backend
     const fetchLogs = async () => {
         try {
             const res = await fetch(API_URL);
             const data = await res.json();
             setLogs(data);
-        } catch (error) {
-            console.error('Error to upload logs', error);
+        } catch (err) {
+            console.error('Failed to load logs', err);
         }
     };
 
@@ -44,6 +46,7 @@ export default function CookingPage() {
         fetchLogs();
     }, []);
 
+    // Handle new cooking or reheating entry
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const now = new Date().toLocaleTimeString([], {
@@ -71,8 +74,9 @@ export default function CookingPage() {
         }
     };
 
+    // Start the cooling process
     const startCooling = async (id: string) => {
-        const now = new Date().toLocaleDateString([], {
+        const now = new Date().toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -85,6 +89,7 @@ export default function CookingPage() {
         if (res.ok) fetchLogs();
     };
 
+    // Finish the cooling process and save final temperature
     const finishCooling = async (id: string) => {
         const finalTemp = parseFloat(coolingTemps[id]);
         if (isNaN(finalTemp)) {
@@ -92,7 +97,7 @@ export default function CookingPage() {
             return;
         }
 
-        const now = new Date().toLocaleDateString([], {
+        const now = new Date().toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
         });
@@ -109,31 +114,23 @@ export default function CookingPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 font-sans">
-            <div className="max-w-5xl mx-auto">
-                {/* HEADER */}
-                <header className="mb-8">
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        👨‍🍳 Cooking & Cooling Control
-                    </h1>
-                </header>
+        <div className="max-w-4xl mx-auto mt-4 space-y-8">
+            {/* ========================================= */}
+            {/* MAIN FORM */}
+            {/* ========================================= */}
+            <div className="p-6 md:p-8 rounded-xl shadow-sm border bg-white border-slate-200">
+                <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    👨‍🍳 Cooking & Cooling Control
+                </h2>
 
-                {/* FORM */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-                    <div className="flex items-center gap-2 mb-6 text-slate-800 font-semibold">
-                        <span className="text-lg">🍗</span> New Cooking Entry
-                    </div>
-
-                    <form
-                        onSubmit={handleSubmit}
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-center"
-                    >
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                         <div className="lg:col-span-2">
-                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">
                                 Food Item
                             </label>
                             <input
-                                className="w-full p-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                                 placeholder="Ex: Roast Beef"
                                 value={formData.foodItem}
                                 onChange={(e) =>
@@ -145,13 +142,12 @@ export default function CookingPage() {
                                 required
                             />
                         </div>
-
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">
                                 Initials
                             </label>
                             <input
-                                className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none uppercase"
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase bg-white"
                                 placeholder="WD"
                                 maxLength={3}
                                 value={formData.initials}
@@ -164,13 +160,15 @@ export default function CookingPage() {
                                 required
                             />
                         </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">
                                 Process
                             </label>
                             <select
-                                className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none"
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                                 value={formData.type}
                                 onChange={(e) =>
                                     setFormData({
@@ -183,16 +181,15 @@ export default function CookingPage() {
                                 <option value="reheat">Reheat (≥70°C)</option>
                             </select>
                         </div>
-
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-2">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">
                                 Core Temp (°C)
                             </label>
                             <input
                                 type="number"
                                 step="0.1"
-                                className="w-full p-3 bg-white border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="75.0"
+                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                placeholder="e.g. 75.0"
                                 value={formData.temp}
                                 onChange={(e) =>
                                     setFormData({
@@ -203,54 +200,68 @@ export default function CookingPage() {
                                 required
                             />
                         </div>
+                    </div>
 
-                        <div className="lg:col-span-5 flex justify-end mt-2">
-                            <button className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-all shadow-md active:scale-95">
-                                Save Record
-                            </button>
-                        </div>
-                    </form>
-                </section>
+                    <div className="flex gap-4 mt-4">
+                        <button
+                            type="submit"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors active:scale-95"
+                        >
+                            Save Record
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                {/* CARDS LIST */}
-                <div className="space-y-4">
-                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        📋 Today's Activity
-                    </h2>
+            {/* ========================================= */}
+            {/* ACTIVITY LIST  */}
+            {/* ========================================= */}
+            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
+                <h3 className="text-xl font-bold text-slate-800 mb-6">
+                    📋 Today's Activity
+                </h3>
 
+                {logs.length === 0 ? (
+                    <p className="text-slate-500 text-sm text-center py-4">
+                        No cooking activity logged yet.
+                    </p>
+                ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {logs.map((log) => (
                             <div
                                 key={log.id}
-                                className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+                                className="border border-slate-200 rounded-xl p-5 bg-slate-50 hover:shadow-sm transition-shadow flex flex-col justify-between"
                             >
                                 {/* CARD HEADER */}
                                 <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <h3 className="font-bold text-slate-800 text-lg">
+                                        {/* EXACT FONT SIZE MATCH: Removed text-lg, added mb-1 for spacing parity */}
+                                        <h5 className="font-bold text-slate-700 mb-1">
                                             {log.foodItem}
-                                        </h3>
-                                        <div className="flex gap-2 mt-1">
-                                            <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold uppercase">
+                                        </h5>
+                                        <div className="flex gap-2">
+                                            <span className="text-[10px] bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded font-bold uppercase">
                                                 By {log.initials}
                                             </span>
-                                            <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold uppercase">
+                                            <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded font-bold uppercase">
                                                 {log.cookTemp
                                                     ? 'Cooked'
                                                     : 'Reheated'}
-                                                :
+                                                :{' '}
                                                 {log.cookTime || log.reheatTime}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="bg-green-50 px-3 py-1 rounded-lg border border-green-100 text-right">
-                                        <span className="text-green-700 font-black text-xl">
-                                            {log.cookTemp || log.reheatTemp}°C
-                                        </span>
-                                    </div>
+                                    <span
+                                        className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm whitespace-nowrap ${(log.cookTemp && log.cookTemp >= 75) || (log.reheatTemp && log.reheatTemp >= 70) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                                    >
+                                        {log.cookTemp || log.reheatTemp}ºC
+                                    </span>
                                 </div>
 
-                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                {/* COOLING LOGIC */}
+                                <div className="mt-4 pt-4 border-t border-slate-200">
+                                    {/* STATE 1: NOT STARTED */}
                                     {!log.coolingStartTime && (
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">
@@ -260,32 +271,29 @@ export default function CookingPage() {
                                                 onClick={() =>
                                                     startCooling(log.id)
                                                 }
-                                                className="bg-blue-50 text-blue-600 px-4 py-2 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors"
+                                                className="bg-blue-100 text-blue-700 px-3 py-1.5 text-xs font-bold rounded hover:bg-blue-200 transition-colors"
                                             >
                                                 Start Cooling ❄️
                                             </button>
                                         </div>
                                     )}
 
+                                    {/* STATE 2: IN PROGRESS */}
                                     {log.coolingStartTime &&
                                         !log.coolingFinishTime && (
-                                            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                                                <div className="flex justify-between items-center mb-3">
+                                            <div className="bg-blue-50/50 rounded p-3 border border-blue-100">
+                                                <div className="flex justify-between items-center mb-2">
                                                     <span className="text-xs font-bold text-blue-700 uppercase tracking-tight flex items-center gap-1">
                                                         ⏳ Cooling Started at{' '}
                                                         {log.coolingStartTime}
                                                     </span>
-                                                    <span className="text-[10px] text-blue-500 font-medium">
-                                                        Max 120 mins
-                                                    </span>
                                                 </div>
-
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
                                                         step="0.1"
                                                         placeholder="Final Temp (≤ 5°C)"
-                                                        className="flex-1 p-2 text-sm border border-blue-200 rounded-md outline-none focus:ring-2 focus:ring-blue-400"
+                                                        className="w-full p-2 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                                                         value={
                                                             coolingTemps[
                                                                 log.id
@@ -306,7 +314,7 @@ export default function CookingPage() {
                                                                 log.id,
                                                             )
                                                         }
-                                                        className="bg-blue-600 text-white px-4 py-2 text-xs font-bold rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                                                        className="bg-blue-600 text-white px-4 py-2 text-sm font-bold rounded hover:bg-blue-700 transition-colors"
                                                     >
                                                         Finish
                                                     </button>
@@ -314,30 +322,30 @@ export default function CookingPage() {
                                             </div>
                                         )}
 
-                                    {/* COOLING DONE */}
+                                    {/* STATE 3: COMPLETED */}
                                     {log.coolingFinishTime && (
-                                        <div className="bg-green-50 rounded-lg p-3 border border-green-100 flex justify-between items-center">
+                                        <div className="flex justify-between items-center">
                                             <div>
-                                                <span className="text-xs font-bold text-green-700 uppercase tracking-tight block">
+                                                <span className="text-xs font-bold text-green-600 uppercase tracking-tight block">
                                                     ✅ Cooling Complete
                                                 </span>
-                                                <span className="text-[10px] text-green-600 font-medium">
+                                                <span className="text-[10px] text-slate-500 font-medium mt-1">
                                                     {log.coolingStartTime} ➔{' '}
                                                     {log.coolingFinishTime}
                                                 </span>
                                             </div>
-                                            <div className="bg-white px-3 py-1 rounded border border-green-200 shadow-sm">
-                                                <span className="text-green-700 font-black text-lg">
-                                                    {log.coolingFinalTemp}ºC
-                                                </span>
-                                            </div>
+                                            <span
+                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm whitespace-nowrap ${(log.coolingFinalTemp ?? 10) <= 5 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                                            >
+                                                {log.coolingFinalTemp}ºC
+                                            </span>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

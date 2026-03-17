@@ -10,6 +10,7 @@ export default function Navigation() {
     const links = [
         { href: '/', label: '📊 Dashboard' },
         { href: '/temperatures', label: '🌡️ Temperatures' },
+        { href: '/cooking', label: '👨‍🍳 Cooking' },
         { href: '/deliveries', label: '📦 Deliveries' },
         { href: '/cleaning', label: '✨ Cleaning' },
     ];
