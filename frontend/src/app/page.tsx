@@ -1,89 +1,113 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 'use client';
 
-import { API_BASE_URL } from '../services/api';
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../services/api';
 
 export default function Home() {
+    // --- HYDRATION FIX ---
+    const [isMounted, setIsMounted] = useState(false);
+
     const [isLoading, setIsLoading] = useState(true);
 
+    // Stats for the top cards
     const [stats, setStats] = useState({
         tempsToday: 0,
-        totalDeliveries: 0,
-        totalCleanings: 0,
+        cookingToday: 0,
+        deliveriesToday: 0,
+        cleaningsToday: 0,
     });
 
-    const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    // Grouped data for each category card
+    const [activity, setActivity] = useState({
+        temps: {} as Record<string, any[]>,
+        cooking: {} as Record<string, any[]>,
+        deliveries: {} as Record<string, any[]>,
+        cleanings: {} as Record<string, any[]>,
+    });
 
     useEffect(() => {
+        // Tells Next.js that the component has safely mounted on the client
+        setIsMounted(true);
+
         const fetchDashboardData = async () => {
             try {
-                const [tempsRes, deliveriesRes, cleaningsRes] =
-                    await Promise.all([
-                        fetch(`${API_BASE_URL}/daily-temperatures`, {
+                const safeFetch = async (endpoint: string) => {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
                             cache: 'no-store',
-                        }),
-                        fetch(`${API_BASE_URL}/deliveries`, {
-                            cache: 'no-store',
-                        }),
-                        fetch(`${API_BASE_URL}/cleaning`, {
-                            cache: 'no-store',
-                        }),
-                    ]);
+                        });
+                        if (!res.ok) return [];
+                        const data = await res.json();
+                        return Array.isArray(data) ? data : [];
+                    } catch (e) {
+                        console.error(`Failed fetching ${endpoint}:`, e);
+                        return [];
+                    }
+                };
 
-                const temps = await tempsRes.json();
-                const deliveries = await deliveriesRes.json();
-                const cleanings = await cleaningsRes.json();
+                const [temps, cooking, deliveries, cleanings] =
+                    await Promise.all([
+                        safeFetch('/daily-temperatures'),
+                        safeFetch('/cooking-logs'),
+                        safeFetch('/deliveries'),
+                        safeFetch('/cleaning'),
+                    ]);
 
                 const todayStr = new Date().toLocaleDateString();
 
-                const tempsToday = temps.filter(
-                    (t: any) =>
-                        new Date(t.createdAt).toLocaleDateString() === todayStr,
-                ).length;
-
                 setStats({
-                    tempsToday,
-                    totalDeliveries: deliveries.length,
-                    totalCleanings: cleanings.length,
+                    tempsToday: temps.filter(
+                        (t: any) =>
+                            new Date(t.createdAt).toLocaleDateString() ===
+                            todayStr,
+                    ).length,
+                    cookingToday: cooking.filter(
+                        (c: any) =>
+                            new Date(c.createdAt).toLocaleDateString() ===
+                            todayStr,
+                    ).length,
+                    deliveriesToday: deliveries.filter(
+                        (d: any) =>
+                            new Date(d.createdAt).toLocaleDateString() ===
+                            todayStr,
+                    ).length,
+                    cleaningsToday: cleanings.filter(
+                        (c: any) =>
+                            new Date(c.createdAt).toLocaleDateString() ===
+                            todayStr,
+                    ).length,
                 });
 
-                const combined = [
-                    ...temps.map((t: any) => ({
-                        id: `temp-${t.id}`,
-                        type: 'Temperature',
-                        title: t.unitName,
-                        subtitle: `Logged at ${t.timeChecked}`,
-                        badge: `${t.temperature}°C`,
-                        isWarning: t.temperature > 8,
-                        date: t.createdAt,
-                    })),
-                    ...deliveries.map((d: any) => ({
-                        id: `deliv-${d.id}`,
-                        type: 'Delivery',
-                        title: d.supplierName,
-                        subtitle: d.foodItem,
-                        badge: 'Received',
-                        isWarning: false,
-                        date: d.createdAt,
-                    })),
-                    ...cleanings.map((c: any) => ({
-                        id: `clean-${c.id}`,
-                        type: 'Cleaning',
-                        title: c.equipmentName,
-                        subtitle: `Cleaned by ${c.cleanedBy}`,
-                        badge: 'Done ✨',
-                        isWarning: false,
-                        date: c.createdAt,
-                    })),
-                ];
+                const processAndGroup = (data: any[]) => {
+                    if (!data || data.length === 0) return {};
 
-                combined.sort(
-                    (a, b) =>
-                        new Date(b.date).getTime() - new Date(a.date).getTime(),
-                );
-                setRecentActivity(combined.slice(0, 5));
+                    const sorted = data.sort(
+                        (a, b) =>
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime(),
+                    );
+                    const limited = sorted.slice(0, 10);
+
+                    return limited.reduce(
+                        (acc: Record<string, any[]>, item: any) => {
+                            const dateStr = new Date(
+                                item.createdAt,
+                            ).toLocaleDateString();
+                            if (!acc[dateStr]) acc[dateStr] = [];
+                            acc[dateStr].push(item);
+                            return acc;
+                        },
+                        {},
+                    );
+                };
+
+                setActivity({
+                    temps: processAndGroup(temps),
+                    cooking: processAndGroup(cooking),
+                    deliveries: processAndGroup(deliveries),
+                    cleanings: processAndGroup(cleanings),
+                });
             } catch (error) {
                 console.error('Failed to load dashboard data', error);
             } finally {
@@ -94,151 +118,315 @@ export default function Home() {
         fetchDashboardData();
     }, []);
 
+    // Hydration safeguard: Do not render HTML until client is ready
+    if (!isMounted) {
+        return null; // Or return a simple loading spinner if you prefer
+    }
+
+    // Helper to render the date headers nicely
+    const renderDateHeader = (dateStr: string) => {
+        const todayStr = new Date().toLocaleDateString();
+        return (
+            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3 mt-4 first:mt-0">
+                📅 {dateStr === todayStr ? 'Today' : dateStr}
+            </h4>
+        );
+    };
+
     return (
-        <div className="max-w-6xl mx-auto">
-            <header className="mb-8 mt-4 md:mt-0">
-                <h2 className="text-3xl font-bold text-slate-800">Dashboard</h2>
-                <p className="text-slate-500 mt-1">
-                    Your kitchen overview for today.
+        <div className="max-w-6xl mx-auto p-4 md:p-8 font-sans">
+            {/* PAGE HEADER */}
+            <header className="mb-8">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                    Dashboard
+                </h2>
+                <p className="text-slate-500 font-medium mt-1">
+                    Your kitchen overview and recent activities.
                 </p>
             </header>
 
-            {/* --- SUMMARY CARDS --- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                    <h3 className="text-slate-500 text-sm font-semibold mb-2 uppercase tracking-wider">
-                        Today&apos;s Temps
+            {/* ========================================= */}
+            {/* SUMMARY STATS GRID                          */}
+            {/* ========================================= */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                {/* TEMPS STAT */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        Temps Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-10 w-16 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <>
-                            <p className="text-4xl font-bold text-slate-800">
+                        <div className="flex items-end gap-2">
+                            <p className="text-3xl font-black text-slate-800 leading-none">
                                 {stats.tempsToday}
                             </p>
-                            <span className="text-green-500 text-sm font-medium mt-2 block">
-                                Logs recorded today
+                            <span className="text-blue-500 text-xs font-bold mb-1 block">
+                                Logs
                             </span>
-                        </>
+                        </div>
                     )}
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                    <h3 className="text-slate-500 text-sm font-semibold mb-2 uppercase tracking-wider">
-                        Total Deliveries
+                {/* COOKING STAT */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        Cooking Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-10 w-16 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <>
-                            <p className="text-4xl font-bold text-slate-800">
-                                {stats.totalDeliveries}
+                        <div className="flex items-end gap-2">
+                            <p className="text-3xl font-black text-slate-800 leading-none">
+                                {stats.cookingToday}
                             </p>
-                            <span className="text-blue-500 text-sm font-medium mt-2 block">
-                                Records in database
+                            <span className="text-orange-500 text-xs font-bold mb-1 block">
+                                Meals
                             </span>
-                        </>
+                        </div>
                     )}
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                    <h3 className="text-slate-500 text-sm font-semibold mb-2 uppercase tracking-wider">
-                        Cleaning Tasks
+                {/* DELIVERIES STAT */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        Deliveries Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-10 w-16 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <>
-                            <p className="text-4xl font-bold text-slate-800">
-                                {stats.totalCleanings}
+                        <div className="flex items-end gap-2">
+                            <p className="text-3xl font-black text-slate-800 leading-none">
+                                {stats.deliveriesToday}
                             </p>
-                            <span className="text-amber-500 text-sm font-medium mt-2 block">
-                                Completed logs
+                            <span className="text-indigo-500 text-xs font-bold mb-1 block">
+                                Received
                             </span>
-                        </>
+                        </div>
+                    )}
+                </div>
+
+                {/* CLEANING STAT */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        Cleaning Today
+                    </h3>
+                    {isLoading ? (
+                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
+                    ) : (
+                        <div className="flex items-end gap-2">
+                            <p className="text-3xl font-black text-slate-800 leading-none">
+                                {stats.cleaningsToday}
+                            </p>
+                            <span className="text-emerald-500 text-xs font-bold mb-1 block">
+                                Tasks
+                            </span>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* --- RECENT ACTIVITY --- */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-75">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    ⚡ Recent Activity
-                </h3>
-
-                {isLoading ? (
-                    <p className="text-slate-500 text-sm py-4 animate-pulse">
-                        Loading latest kitchen events...
-                    </p>
-                ) : recentActivity.length === 0 ? (
-                    <p className="text-slate-500 text-sm py-4">
-                        No activity logged yet.
-                    </p>
-                ) : (
-                    <div className="divide-y divide-slate-100">
-                        {recentActivity.map((item) => (
-                            <div
-                                key={item.id}
-                                className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors -mx-6 px-6"
-                            >
-                                <div className="flex items-center gap-4">
-                                    {/* Dynamic icon based on record type. */}
-                                    <div
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 ${
-                                            item.type === 'Temperature'
-                                                ? 'bg-red-100 text-red-500'
-                                                : item.type === 'Delivery'
-                                                  ? 'bg-blue-100 text-blue-500'
-                                                  : 'bg-amber-100 text-amber-500'
-                                        }`}
-                                    >
-                                        {item.type === 'Temperature'
-                                            ? '🌡️'
-                                            : item.type === 'Delivery'
-                                              ? '📦'
-                                              : '✨'}
+            {/* ========================================= */}
+            {/* ACTIVITY CARDS GRID                         */}
+            {/* ========================================= */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* --- TEMPERATURES CARD --- */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        🌡️ Recent Temperatures
+                    </h3>
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                        {isLoading ? (
+                            <p className="text-slate-400 text-sm animate-pulse">
+                                Loading...
+                            </p>
+                        ) : Object.keys(activity.temps).length === 0 ? (
+                            <p className="text-slate-400 text-sm">
+                                No records found.
+                            </p>
+                        ) : (
+                            Object.entries(activity.temps).map(
+                                ([date, items]) => (
+                                    <div key={date}>
+                                        {renderDateHeader(date)}
+                                        <div className="space-y-3">
+                                            {items.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                >
+                                                    <div>
+                                                        <p className="font-bold text-slate-700 text-sm">
+                                                            {item.unitName}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                            {item.timeChecked}
+                                                        </p>
+                                                    </div>
+                                                    <span
+                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.temperature > 8 && !item.unitName.includes('Dishwasher') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                    >
+                                                        {item.temperature}°C
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-
-                                    <div>
-                                        <p className="font-bold text-slate-700">
-                                            {item.title}
-                                        </p>
-                                        <p className="text-sm text-slate-500">
-                                            {item.subtitle}
-                                        </p>
-                                        <p className="text-xs text-slate-400 mt-0.5">
-                                            {new Date(
-                                                item.date,
-                                            ).toLocaleDateString()}{' '}
-                                            at{' '}
-                                            {new Date(
-                                                item.date,
-                                            ).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Dynamic Badge */}
-                                <span
-                                    className={`px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap self-start sm:self-auto ${
-                                        item.isWarning
-                                            ? 'bg-red-100 text-red-700'
-                                            : item.type === 'Temperature'
-                                              ? 'bg-green-100 text-green-700'
-                                              : item.type === 'Delivery'
-                                                ? 'bg-blue-100 text-blue-700'
-                                                : 'bg-amber-100 text-amber-700'
-                                    }`}
-                                >
-                                    {item.badge}
-                                </span>
-                            </div>
-                        ))}
+                                ),
+                            )
+                        )}
                     </div>
-                )}
+                </div>
+
+                {/* --- COOKING CARD --- */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        👨‍🍳 Cooking & Cooling
+                    </h3>
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                        {isLoading ? (
+                            <p className="text-slate-400 text-sm animate-pulse">
+                                Loading...
+                            </p>
+                        ) : Object.keys(activity.cooking).length === 0 ? (
+                            <p className="text-slate-400 text-sm">
+                                No records found.
+                            </p>
+                        ) : (
+                            Object.entries(activity.cooking).map(
+                                ([date, items]) => (
+                                    <div key={date}>
+                                        {renderDateHeader(date)}
+                                        <div className="space-y-3">
+                                            {items.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                >
+                                                    <div>
+                                                        <p className="font-bold text-slate-700 text-sm">
+                                                            {item.foodItem}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                            By {item.initials} •{' '}
+                                                            {item.cookTime ||
+                                                                item.reheatTime}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm bg-orange-100 text-orange-700">
+                                                            {item.cookTemp ||
+                                                                item.reheatTemp}
+                                                            °C
+                                                        </span>
+                                                        {item.coolingFinishTime && (
+                                                            <span className="text-[9px] font-bold text-blue-500 uppercase">
+                                                                Cooling Done ❄️
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ),
+                            )
+                        )}
+                    </div>
+                </div>
+
+                {/* --- DELIVERIES CARD --- */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        📦 Recent Deliveries
+                    </h3>
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                        {isLoading ? (
+                            <p className="text-slate-400 text-sm animate-pulse">
+                                Loading...
+                            </p>
+                        ) : Object.keys(activity.deliveries).length === 0 ? (
+                            <p className="text-slate-400 text-sm">
+                                No records found.
+                            </p>
+                        ) : (
+                            Object.entries(activity.deliveries).map(
+                                ([date, items]) => (
+                                    <div key={date}>
+                                        {renderDateHeader(date)}
+                                        <div className="space-y-3">
+                                            {items.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                >
+                                                    <div>
+                                                        <p className="font-bold text-slate-700 text-sm">
+                                                            {item.supplierName}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                            {item.foodItem}
+                                                        </p>
+                                                    </div>
+                                                    <span className="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm bg-indigo-100 text-indigo-700">
+                                                        Received
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ),
+                            )
+                        )}
+                    </div>
+                </div>
+
+                {/* --- CLEANING CARD --- */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        ✨ Cleaning Tasks
+                    </h3>
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                        {isLoading ? (
+                            <p className="text-slate-400 text-sm animate-pulse">
+                                Loading...
+                            </p>
+                        ) : Object.keys(activity.cleanings).length === 0 ? (
+                            <p className="text-slate-400 text-sm">
+                                No records found.
+                            </p>
+                        ) : (
+                            Object.entries(activity.cleanings).map(
+                                ([date, items]) => (
+                                    <div key={date}>
+                                        {renderDateHeader(date)}
+                                        <div className="space-y-3">
+                                            {items.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                >
+                                                    <div>
+                                                        <p className="font-bold text-slate-700 text-sm">
+                                                            {item.equipmentName}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                            Cleaned by{' '}
+                                                            {item.cleanedBy}
+                                                        </p>
+                                                    </div>
+                                                    <span className="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm bg-emerald-100 text-emerald-700">
+                                                        Done
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ),
+                            )
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

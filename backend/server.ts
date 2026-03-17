@@ -198,7 +198,7 @@ app.put('/api/cleaning/:id', async (req, res) => {
 // ==========================================
 // ✨ COOKING LOG ROUTES
 // ==========================================
-app.get('/cooking-logs', async (req, res) => {
+app.get('/api/cooking-logs', async (req, res) => {
     try {
         const logs = await prisma.cookingLog.findMany({
             orderBy: { createdAt: 'desc' },
@@ -209,7 +209,7 @@ app.get('/cooking-logs', async (req, res) => {
     }
 });
 
-app.post('/cooking-logs', async (req, res) => {
+app.post('/api/cooking-logs', async (req, res) => {
     try {
         const log = await prisma.cookingLog.create({
             data: req.body,
@@ -220,11 +220,11 @@ app.post('/cooking-logs', async (req, res) => {
     }
 });
 
-app.put('/cooking-logs/:id', async (req, res) => {
+app.put('/api/cooking-logs/:id', async (req, res) => {
     const { id } = req.params;
     try {
         const updated = await prisma.cookingLog.update({
-            where: { id },
+            where: { id: id },
             data: req.body,
         });
         res.json(updated);

@@ -20,6 +20,7 @@ export default function RootLayout({
         <html lang="en">
             <body
                 className={`${inter.className} bg-slate-50 text-slate-900 flex flex-col lg:flex-row min-h-screen`}
+                suppressHydrationWarning
             >
                 {/* Sidebar / Top bar */}
                 <aside className="w-full lg:w-64 bg-slate-950 text-slate-300 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 shadow-xl z-10 shrink-0">
