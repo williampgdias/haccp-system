@@ -1,6 +1,5 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcrypt';
 
 const handler = NextAuth({
     providers: [
@@ -17,9 +16,7 @@ const handler = NextAuth({
                 }
 
                 try {
-                    console.log(
-                        `🔍 1. Fetching user from backend: ${credentials.email}`,
-                    );
+                    // Fetching user + restaurant from out new backend route
                     const res = await fetch(
                         `http://localhost:3001/api/users/by-email/${credentials.email}`,
                     );
@@ -30,18 +27,13 @@ const handler = NextAuth({
 
                     const user = await res.json();
 
-                    const isPasswordValid = await bcrypt.compare(
-                        credentials.password,
-                        user.password,
-                    );
+                    if (credentials.password !== user.password) return null;
 
-                    if (!isPasswordValid) {
-                        return null;
-                    }
                     return {
                         id: user.id,
                         name: user.name,
                         email: user.email,
+                        restaurantId: user.restaurantId,
                         role: user.role,
                     };
                 } catch (error) {
@@ -51,21 +43,29 @@ const handler = NextAuth({
             },
         }),
     ],
+    callbacks: {
+        // Save restaurantId into the JWT token
+        async jwt({ token, user }) {
+            if (user) {
+                token.restaurantId = (user as any).restaurantId;
+                token.role = (user as any).role;
+            }
+            return token;
+        },
+        // Pass restaurantId from the token to the Session
+        async session({ session, token }) {
+            if (session.user) {
+                (session.user as any).restaurantId = token.restaurantId;
+                (session.user as any).role = token.role;
+            }
+            return session;
+        },
+    },
     pages: {
         signIn: '/login',
     },
     session: {
         strategy: 'jwt',
-    },
-    callbacks: {
-        async jwt({ token, user }) {
-            if (user) token.role = (user as any).role;
-            return token;
-        },
-        async session({ session, token }) {
-            if (session.user) (session.user as any).role = token.role;
-            return session;
-        },
     },
 });
 
