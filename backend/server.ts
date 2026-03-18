@@ -246,15 +246,31 @@ app.get('/api/users/by-email/:email', async (req, res) => {
     }
 });
 
-app.post('/api/users', async (req, res) => {
+app.post('/api/setup', async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
-        const user = await prisma.user.create({
-            data: { name, email, password, role },
+        const { restaurantName, userName, email, password, role } = req.body;
+
+        const newRestaurant = await prisma.restaurant.create({
+            data: {
+                name: restaurantName,
+                users: {
+                    create: {
+                        name: userName,
+                        email: email,
+                        password: password,
+                        role: role,
+                    },
+                },
+            },
+            include: {
+                users: true,
+            },
         });
-        res.json(user);
+
+        res.json(newRestaurant);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create user' });
+        console.error('Setup Error:', error);
+        res.status(500).json({ error: 'Failed to setup restaurant and user' });
     }
 });
 

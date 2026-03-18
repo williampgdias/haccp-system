@@ -8,69 +8,107 @@ datasource db {
   provider = "postgresql"
 }
 
-// Temperature Table
-model Temperature {
-  id                        String   @id @default(uuid())
-  createdAt                 DateTime @default(now())
-  unitName                  String
-  timeChecked               String
-  temperature               Float
-  rinseTemperature          Float?
+model Restaurant {
+id                      String              @id @default(uuid())
+    name                String
+
+    // Relations
+    users               User[]
+    equipments          Equipment[]
+    cookingLogs         CookingLog[]
+    temperatureLogs     TemperatureLog[]    
+    deliveryLogs        DeliveryLog[]
+    cleaningLogs        CleaningLog[]
+
+    createdAt           DateTime            @default(now())
+    updatedAt           DateTime            @updatedAt
 }
 
-// Deliveries Table
-model Delivery {
-  id                        String   @id @default(uuid())
-  createdAt                 DateTime @default(now())
-  deliveryDate              String
-  supplierName              String
-  foodItem                  String
-  batchCode                 String
-  useByDate                 String
-  temperature               Float
-  isAppearanceAcceptable    Boolean
-  isVanChecked              Boolean
-  comments                  String?
-  signature                 String
+model User {
+    id                  String              @id @default(uuid())
+    name                String
+    email               String              @unique
+    password            String
+    role                String              @default("STAFF")
+
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+    createdAt           DateTime            @default(now())
+    updatedAt           DateTime            @updatedAt
 }
 
-// Cleaning Schedule Table
-model Cleaning {
-  id                        String   @id @default(uuid())
-  createdAt                 DateTime @default(now())
-  weekEndingDate            String
-  dateCleaned               String
-  equipmentName             String
-  cleanedBy                 String
+model Equipment {
+    id                  String              @id @default(uuid())
+    name                String
+    type                String
+
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+    logs                TemperatureLog[]
+
+    createdAt           DateTime            @default(now())
+    updatedAt           DateTime            @updatedAt
 }
 
 model CookingLog {
-  id                        String   @id @default(uuid())
-  createdAt                 DateTime @default(now())
-  foodItem                  String
-  initials                  String
-  
-  // Cooking
-  cookTemp                  Float?
-  cookTime                  String?
-  
-  // Reheating
-  reheatTemp                Float?
-  reheatTime                String?
-  
-  // Cooling (The 120min rule)
-  coolingStartTime          String?
-  coolingFinishTime         String?
-  coolingFinalTemp          Float?
+    id                  String              @id @default(uuid())
+    foodItem            String
+    initials            String
+    cookTemp            Float?
+    cookTime            String?
+    reheatTemp          Float?
+    reheatTime          String?
+    coolingStartTime    String?
+    coolingStartTemp    Float?
+    coolingMiddleTime   String?
+    coolingMiddleTemp   Float?
+    coolingFinishTime   String?
+    coolingFinishTemp   Float?
+
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+    createdAt           DateTime            @default(now())
 }
 
-// User Authentication
-model User {
-  id                        String   @id @default(uuid())
-  name                      String
-  email                     String   @unique
-  password                  String
-  role                      String   @default("STAFF")
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+model TemperatureLog {
+    id                  String              @id @default(uuid())
+    temperature         Float
+    initials            String
+
+    equipmentId         String
+    equipment           Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+    createdAt           DateTime            @default(now())
+}
+
+model DeliveryLog {
+    id                  String              @id @default(uuid())
+    supplier            String
+    invoiceNumber       String?
+    temperature         Float?
+    condition           String
+    initials            String
+    
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+    
+    createdAt           DateTime            @default(now())
+}
+
+model CleaningLog {
+    id                  String              @id @default(uuid())
+    area                String
+    status              String
+    initials            String
+
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+    createdAt           DateTime            @default(now())
 }

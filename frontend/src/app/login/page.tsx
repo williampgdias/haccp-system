@@ -35,9 +35,6 @@ export default function LoginPage() {
         <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 font-sans">
             <div className="bg-white p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
-                        <span className="text-3xl">👨‍🍳</span>
-                    </div>
                     <h1 className="text-3xl font-black text-slate-800 tracking-tight">
                         HACCP Pro
                     </h1>
