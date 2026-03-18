@@ -22,7 +22,6 @@ app.use(express.json());
 // ==========================================
 // 🌡️ TEMPERATURE ROUTES
 // ==========================================
-
 app.get('/api/daily-temperatures', async (req, res) => {
     try {
         const records = await prisma.temperature.findMany();
@@ -155,7 +154,6 @@ app.put('/api/deliveries/:id', async (req, res) => {
 // ==========================================
 // ✨ CLEANING ROUTES
 // ==========================================
-
 app.get('/api/cleaning', async (req, res) => {
     try {
         const records = await prisma.cleaning.findMany();
@@ -230,6 +228,33 @@ app.put('/api/cooking-logs/:id', async (req, res) => {
         res.json(updated);
     } catch (error) {
         res.status(500).json({ error: 'Failed to update log' });
+    }
+});
+
+// ==========================================
+// AUTHENTICATION ROUTES
+// ==========================================
+app.get('/api/users/by-email/:email', async (req, res) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email: req.params.email },
+        });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/users', async (req, res) => {
+    try {
+        const { name, email, password, role } = req.body;
+        const user = await prisma.user.create({
+            data: { name, email, password, role },
+        });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create user' });
     }
 });
 

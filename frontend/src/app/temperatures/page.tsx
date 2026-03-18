@@ -421,48 +421,52 @@ export default function TemperaturesPage() {
                                                                 )}
                                                             </div>
                                                             {checks.morning && (
-                                                                <div className="flex justify-end items-center gap-2">
-                                                                    <span
-                                                                        className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning('wash cycle', checks.morning.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
-                                                                    >
-                                                                        <span className="text-xs font-normal mr-1">
-                                                                            Wash:
-                                                                        </span>
-                                                                        {
-                                                                            checks
-                                                                                .morning
-                                                                                .temperature
-                                                                        }
-                                                                        ºC
-                                                                    </span>
-                                                                    {checks
-                                                                        .morning
-                                                                        .rinseTemperature && (
+                                                                <div className="flex justify-between gap-2">
+                                                                    <div className="flex gap-2">
                                                                         <span
-                                                                            className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning('rinse cycle', checks.morning.rinseTemperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                            className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning('wash cycle', checks.morning.temperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                                         >
                                                                             <span className="text-xs font-normal mr-1">
-                                                                                Rinse:
+                                                                                Wash:
                                                                             </span>
                                                                             {
                                                                                 checks
                                                                                     .morning
-                                                                                    .rinseTemperature
+                                                                                    .temperature
                                                                             }
                                                                             ºC
                                                                         </span>
-                                                                    )}
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            handleEditClick(
-                                                                                checks.morning!,
-                                                                            )
-                                                                        }
-                                                                        className="ml-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                                                                        title="Edit Record"
-                                                                    >
-                                                                        ✏️
-                                                                    </button>
+                                                                        {checks
+                                                                            .morning
+                                                                            .rinseTemperature && (
+                                                                            <span
+                                                                                className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${isTempWarning('rinse cycle', checks.morning.rinseTemperature) ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                                            >
+                                                                                <span className="text-xs font-normal mr-1">
+                                                                                    Rinse:
+                                                                                </span>
+                                                                                {
+                                                                                    checks
+                                                                                        .morning
+                                                                                        .rinseTemperature
+                                                                                }
+                                                                                ºC
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                handleEditClick(
+                                                                                    checks.morning!,
+                                                                                )
+                                                                            }
+                                                                            className="ml-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                                                            title="Edit Record"
+                                                                        >
+                                                                            ✏️
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>

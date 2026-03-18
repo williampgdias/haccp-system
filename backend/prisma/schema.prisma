@@ -63,3 +63,14 @@ model CookingLog {
   coolingFinishTime         String?
   coolingFinalTemp          Float?
 }
+
+// User Authentication
+model User {
+  id                        String   @id @default(uuid())
+  name                      String
+  email                     String   @unique
+  password                  String
+  role                      String   @default("STAFF")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../services/api';
 
 // Interface matches the Prisma Schema
 interface CookingLog {
@@ -29,7 +30,7 @@ export default function CookingPage() {
         {},
     );
 
-    const API_URL = 'http://localhost:3001/cooking-logs';
+    const API_URL = `${API_BASE_URL}/cooking-logs`;
 
     // Fetch logs from the backend
     const fetchLogs = async () => {
