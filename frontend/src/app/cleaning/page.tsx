@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
@@ -8,12 +9,14 @@ import toast from 'react-hot-toast';
 export default function CleaningPage() {
     const { data: session } = useSession();
 
+    // --- State Management ---
     const [logs, setLogs] = useState<any[]>([]);
+    const [areas, setAreas] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingLogs, setIsFetchingLogs] = useState(true);
     const [status, setStatus] = useState<'CLEAN' | 'PENDING'>('CLEAN');
 
-    // Professional Initials Logic ("William Dias" -> "WD")
+    // Generate user initials (e.g., "William Dias" -> "WD")
     const getInitials = (name: string | null | undefined) => {
         if (!name) return '';
         const names = name.trim().split(' ');
@@ -23,7 +26,7 @@ export default function CleaningPage() {
 
     const defaultInitials = getInitials(session?.user?.name);
 
-    // Helper: ISO to 12h AM/PM format
+    // Format ISO dates to a clean 12h AM/PM string
     const formatIsoTo12h = (isoString: string) => {
         return new Date(isoString).toLocaleTimeString('en-US', {
             hour: 'numeric',
@@ -32,31 +35,38 @@ export default function CleaningPage() {
         });
     };
 
-    // Fetch recent cleaning logs
-    const fetchLogs = useCallback(async (restaurantId: string) => {
+    /**
+     * FETCH DATA: Syncs logs and pre-registered areas from the backend
+     */
+    const fetchData = useCallback(async (restaurantId: string) => {
         try {
             setIsFetchingLogs(true);
-            const res = await fetch(
-                `http://localhost:3001/api/logs/cleaning/${restaurantId}`,
-            );
-            if (res.ok) {
-                const data = await res.json();
-                setLogs(data);
-            }
+            const [resLogs, resAreas] = await Promise.all([
+                fetch(
+                    `http://localhost:3001/api/logs/cleaning/${restaurantId}`,
+                ),
+                fetch(
+                    `http://localhost:3001/api/logs/cleaning-areas/${restaurantId}`,
+                ),
+            ]);
+
+            if (resLogs.ok) setLogs(await resLogs.json());
+            if (resAreas.ok) setAreas(await resAreas.json());
         } catch (err) {
-            console.error('Error fetching cleaning logs:', err);
+            console.error('Error fetching data:', err);
         } finally {
             setIsFetchingLogs(false);
         }
     }, []);
 
-    // Initial Data Fetch
     useEffect(() => {
         const restaurantId = (session?.user as any)?.restaurantId;
-        if (restaurantId) fetchLogs(restaurantId);
-    }, [session, fetchLogs]);
+        if (restaurantId) fetchData(restaurantId);
+    }, [session, fetchData]);
 
-    // Form Submit
+    /**
+     * FORM SUBMIT: Records a new cleaning event linked to a specific area ID
+     */
     async function saveCleaningLog(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setIsLoading(true);
@@ -65,13 +75,19 @@ export default function CleaningPage() {
         const formData = new FormData(form);
         const restaurantId = (session?.user as any)?.restaurantId;
 
+        // Extract the selected Area ID from the dropdown
+        const selectedAreaId = formData.get('areaId') as string;
+        // Find the area name in our local state to save it as a string too (for history)
+        const selectedAreaObj = areas.find((a) => a.id === selectedAreaId);
+
         try {
             const res = await fetch('http://localhost:3001/api/logs/cleaning', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     restaurantId,
-                    area: formData.get('area'),
+                    cleaningAreaId: selectedAreaId, // Essential for Prisma Relation
+                    area: selectedAreaObj?.name, // Display name for history
                     status: status,
                     initials: formData.get('initials'),
                     comments: formData.get('comments') || '',
@@ -82,20 +98,20 @@ export default function CleaningPage() {
                 form.reset();
                 setStatus('CLEAN');
                 toast.success('Cleaning task recorded!');
-                if (restaurantId) await fetchLogs(restaurantId);
+                if (restaurantId) await fetchData(restaurantId);
             } else {
-                toast.error('Error recording cleaning task.');
+                const errorData = await res.json();
+                toast.error(errorData.error || 'Failed to save log.');
             }
         } catch (error) {
-            console.error('Error:', error);
-            toast.error('Server connection error.');
+            toast.error('Server error connection.');
         } finally {
             setIsLoading(false);
         }
     }
 
     return (
-        <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans relative">
+        <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                     Cleaning Schedule ✨
@@ -105,27 +121,26 @@ export default function CleaningPage() {
                 </p>
             </header>
 
-            {/* INPUT FORM */}
+            {/* FORM SECTION */}
             <form
                 onSubmit={saveCleaningLog}
-                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
+                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8"
             >
-                {/* STATUS SELECTOR */}
+                {/* STATUS TOGGLE */}
                 <div>
                     <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
                         Task Status
                     </label>
-                    <div className="flex gap-3 sm:gap-4">
+                    <div className="flex gap-3">
                         <label className="flex-1 cursor-pointer">
                             <input
                                 type="radio"
                                 name="statusToggle"
-                                value="CLEAN"
                                 checked={status === 'CLEAN'}
                                 onChange={() => setStatus('CLEAN')}
                                 className="peer sr-only"
                             />
-                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all hover:bg-slate-100">
+                            <div className="text-center p-2.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-400 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all">
                                 ✨ Cleaned
                             </div>
                         </label>
@@ -133,30 +148,34 @@ export default function CleaningPage() {
                             <input
                                 type="radio"
                                 name="statusToggle"
-                                value="PENDING"
                                 checked={status === 'PENDING'}
                                 onChange={() => setStatus('PENDING')}
                                 className="peer sr-only"
                             />
-                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 peer-checked:text-yellow-700 transition-all hover:bg-slate-100">
+                            <div className="text-center p-2.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-400 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 peer-checked:text-yellow-700 transition-all">
                                 ⏳ Pending
                             </div>
                         </label>
                     </div>
                 </div>
 
-                {/* AREA / EQUIPMENT */}
+                {/* DYNAMIC SELECT: Loaded from Settings */}
                 <div>
                     <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
                         Area / Equipment
                     </label>
-                    <input
-                        type="text"
-                        name="area"
+                    <select
+                        name="areaId"
                         required
-                        placeholder="Ex: Preparation Table, Floor, Dishwasher..."
-                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                    />
+                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
+                    >
+                        <option value="">Select an area...</option>
+                        {areas.map((a) => (
+                            <option key={a.id} value={a.id}>
+                                {a.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -169,7 +188,7 @@ export default function CleaningPage() {
                             name="initials"
                             required
                             defaultValue={defaultInitials}
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
+                            className="w-full p-2.5 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
                         />
                     </div>
                     <div>
@@ -183,76 +202,64 @@ export default function CleaningPage() {
                             type="text"
                             name="comments"
                             placeholder="Ex: Sanitized with Blue Spray"
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                            className="w-full p-2.5 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                         />
                     </div>
                 </div>
 
                 <button
                     type="submit"
-                    disabled={isLoading}
-                    className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-lg shadow-md"
+                    disabled={isLoading || areas.length === 0}
+                    className="mt-2 bg-slate-900 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors text-sm sm:text-base shadow-md disabled:opacity-50"
                 >
-                    {isLoading ? 'Saving...' : 'Save Cleaning Task'}
+                    {isLoading
+                        ? 'Saving...'
+                        : areas.length === 0
+                          ? 'No Areas Registered'
+                          : 'Save Cleaning Task'}
                 </button>
             </form>
 
-            {/* RECENT RECORDS HISTORY */}
-            <div>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
+            {/* LIST HISTORY */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-bold text-slate-800 px-1">
                     Recent Cleaning Logs
                 </h3>
-
                 {isFetchingLogs ? (
-                    <p className="text-slate-400 text-xs sm:text-sm animate-pulse font-medium">
+                    <p className="text-slate-400 text-xs animate-pulse font-medium">
                         Loading history...
                     </p>
                 ) : logs.length === 0 ? (
-                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-6 sm:p-8 text-center">
+                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-8 text-center">
                         <p className="text-slate-500 font-medium text-sm">
-                            No cleaning tasks found for today.
+                            No tasks recorded today.
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3 sm:space-y-4">
-                        {logs.slice(0, 10).map((log) => {
-                            const isClean = log.status === 'CLEAN';
-
-                            return (
-                                <div
-                                    key={log.id}
-                                    className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 transition-all hover:shadow-md"
-                                >
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="font-bold text-slate-800 text-base sm:text-lg leading-none">
-                                                {log.area}
-                                            </p>
-                                            <span
-                                                className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${isClean ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
-                                            >
-                                                {log.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
-                                            By{' '}
-                                            <span className="font-bold text-slate-500">
-                                                {log.initials}
-                                            </span>{' '}
-                                            • {formatIsoTo12h(log.createdAt)}
+                    <div className="space-y-3">
+                        {logs.slice(0, 10).map((log) => (
+                            <div
+                                key={log.id}
+                                className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center transition-all hover:shadow-md"
+                            >
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <p className="font-bold text-slate-800 text-sm">
+                                            {log.area}
                                         </p>
-                                        {log.comments && (
-                                            <p className="text-[10px] sm:text-xs text-slate-500 italic mt-1.5 flex items-center gap-1">
-                                                <span className="text-blue-400">
-                                                    💬
-                                                </span>{' '}
-                                                {log.comments}
-                                            </p>
-                                        )}
+                                        <span
+                                            className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${log.status === 'CLEAN' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
+                                        >
+                                            {log.status}
+                                        </span>
                                     </div>
+                                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                        By {log.initials} •{' '}
+                                        {formatIsoTo12h(log.createdAt)}
+                                    </p>
                                 </div>
-                            );
-                        })}
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

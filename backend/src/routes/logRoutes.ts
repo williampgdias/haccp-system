@@ -50,27 +50,76 @@ router.put('/cooking/:id/cooling', async (req, res) => {
 });
 
 /**
+ * CLEANING AREAS
+ */
+router.get('/cleaning-areas/:restaurantId', async (req, res) => {
+    try {
+        const areas = await prisma.cleaningArea.findMany({
+            where: { restaurantId: req.params.restaurantId },
+            orderBy: { name: 'asc' },
+        });
+        res.json(areas);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch areas' });
+    }
+});
+
+router.post('/cleaning-areas', async (req, res) => {
+    const { name, restaurantId } = req.body;
+    try {
+        const area = await prisma.cleaningArea.create({
+            data: { name, restaurantId },
+        });
+        res.status(201).json(area);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to create area' });
+    }
+});
+
+router.delete('/cleaning-areas/:id', async (req, res) => {
+    try {
+        await prisma.cleaningArea.delete({ where: { id: req.params.id } });
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete area' });
+    }
+});
+
+/**
  * CLEANING LOGS
  */
 router.get('/cleaning/:restaurantId', async (req, res) => {
-    const areas = await prisma.cleaningLog.findMany({
-        where: { restaurantId: req.params.restaurantId },
-        orderBy: { name: 'asc' },
-    });
-    res.json(areas);
+    try {
+        const logs = await prisma.cleaningLog.findMany({
+            where: { restaurantId: req.params.restaurantId },
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch logs' });
+    }
 });
 
 router.post('/cleaning', async (req, res) => {
-    const { name, restaurantId } = req.body;
-    const area = await prisma.cleaningLog.create({
-        data: { name, restaurantId },
-    });
-    res.status(201).json(area);
-});
-
-router.delete('/cleaning/:id', async (req, res) => {
-    await prisma.cleaningLog.delete({ where: { id: req.params.id } });
-    res.status(204).send();
+    const { restaurantId, area, status, initials, comments, cleaningAreaId } =
+        req.body;
+    try {
+        const log = await prisma.cleaningLog.create({
+            data: {
+                restaurantId,
+                area,
+                status,
+                initials,
+                comments,
+                cleaningAreaId,
+            },
+        });
+        res.status(201).json(log);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to create log' });
+    }
 });
 
 /**
@@ -166,12 +215,12 @@ router.get('/temperatures/:restaurantId', async (req, res) => {
 
 // ----- EQUIPMENT -----
 router.post('/equipment', async (req, res) => {
+    const { name, restaurantId, type } = req.body;
     try {
-        const { name, type, restaurantId } = req.body;
         const equipment = await prisma.equipment.create({
-            data: { name, type, restaurantId },
+            data: { name, restaurantId, type },
         });
-        res.json(equipment);
+        res.status(201).json(equipment);
     } catch (error) {
         res.status(500).json({ error: 'Failed to create equipment' });
     }

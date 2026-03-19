@@ -10,13 +10,11 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en">
-            <body className="bg-slate-50">
+        <html lang="en" suppressHydrationWarning>
+            <body className="bg-slate-50" suppressHydrationWarning>
                 <NextAuthProvider>
                     <div className="flex flex-col lg:flex-row min-h-screen">
-                        {/* Nav sempre dentro do Provider */}
                         <Navigation />
-
                         <div className="flex-1 flex flex-col min-w-0">
                             <Header />
                             <main className="flex-1">{children}</main>

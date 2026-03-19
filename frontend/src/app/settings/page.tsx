@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -44,7 +47,9 @@ export default function SettingsPage() {
         const formData = new FormData(form);
         const name = formData.get('name');
 
-        const endpoint = type === 'fridge' ? 'equipment' : 'cleaning-areas';
+        const endpoint =
+            type === 'fridge' ? 'logs/equipment' : 'logs/cleaning-areas';
+
         const body =
             type === 'fridge'
                 ? { name, restaurantId, type: 'FRIDGE' }
@@ -62,25 +67,31 @@ export default function SettingsPage() {
                     `${type === 'fridge' ? 'Equipment' : 'Area'} added!`,
                 );
                 form.reset();
-                fetchData();
+                await fetchData();
+            } else {
+                toast.error('Failed to save. Check backend console.');
             }
         } catch (err) {
-            toast.error('Connection error.');
+            toast.error('Connection error. Is backend running?');
         } finally {
             setIsLoading(false);
         }
     }
 
     async function handleDelete(id: string, type: 'fridge' | 'area') {
-        const endpoint = type === 'fridge' ? 'equipment' : 'cleaning-areas';
+        // AJUSTE AQUI: Adicionamos o "logs" no caminho
+        const endpoint =
+            type === 'fridge' ? 'logs/equipment' : 'logs/cleaning-areas';
         try {
             const res = await fetch(
                 `http://localhost:3001/api/${endpoint}/${id}`,
-                { method: 'DELETE' },
+                {
+                    method: 'DELETE',
+                },
             );
             if (res.ok) {
                 toast.success('Removed');
-                fetchData();
+                await fetchData();
             }
         } catch (err) {
             toast.error('Delete failed');
