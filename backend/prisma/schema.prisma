@@ -103,13 +103,11 @@ model DeliveryLog {
 }
 
 model CleaningLog {
-    id                  String              @id @default(uuid())
-    area                String
-    status              String
-    initials            String
+    id           String    @id @default(uuid())
+    name         String
 
-    restaurantId        String
-    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-
-    createdAt           DateTime            @default(now())
+    restaurantId String
+    restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+    
+    createdAt    DateTime  @default(now())    
 }

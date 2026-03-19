@@ -52,28 +52,25 @@ router.put('/cooking/:id/cooling', async (req, res) => {
 /**
  * CLEANING LOGS
  */
-router.post('/cleaning', async (req, res) => {
-    try {
-        const { restaurantId, ...data } = req.body;
-        const log = await prisma.cleaningLog.create({
-            data: { ...data, restaurantId },
-        });
-        res.status(201).json(log);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create cleaning log' });
-    }
+router.get('/cleaning/:restaurantId', async (req, res) => {
+    const areas = await prisma.cleaningLog.findMany({
+        where: { restaurantId: req.params.restaurantId },
+        orderBy: { name: 'asc' },
+    });
+    res.json(areas);
 });
 
-router.get('/cleaning/:restaurantId', async (req, res) => {
-    try {
-        const logs = await prisma.cleaningLog.findMany({
-            where: { restaurantId: req.params.restaurantId },
-            orderBy: { createdAt: 'desc' },
-        });
-        res.json(logs);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch cleaning logs.' });
-    }
+router.post('/cleaning', async (req, res) => {
+    const { name, restaurantId } = req.body;
+    const area = await prisma.cleaningLog.create({
+        data: { name, restaurantId },
+    });
+    res.status(201).json(area);
+});
+
+router.delete('/cleaning/:id', async (req, res) => {
+    await prisma.cleaningLog.delete({ where: { id: req.params.id } });
+    res.status(204).send();
 });
 
 /**
