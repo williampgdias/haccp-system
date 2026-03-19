@@ -13,6 +13,7 @@ export default function Navigation() {
         { href: '/cooking', label: '👨‍🍳 Cooking' },
         { href: '/deliveries', label: '📦 Deliveries' },
         { href: '/cleaning', label: '✨ Cleaning' },
+        { href: '/settings', label: '⚙️ Settings' },
     ];
 
     return (
