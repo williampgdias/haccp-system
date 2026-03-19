@@ -1,302 +1,257 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../../services/api';
-
-interface CleaningRecord {
-    id: string;
-    createdAt: string;
-    weekEndingDate: string;
-    dateCleaned: string;
-    equipmentName: string;
-    cleanedBy: string;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
 
 export default function CleaningPage() {
-    const [formData, setFormData] = useState({
-        weekEndingDate: '',
-        dateCleaned: '',
-        equipmentName: '',
-        cleanedBy: '',
-    });
+    const { data: session } = useSession();
 
-    const [statusMessage, setStatusMessage] = useState('');
-    const [records, setRecords] = useState<CleaningRecord[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    
-    // State for editing mode
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [logs, setLogs] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingLogs, setIsFetchingLogs] = useState(true);
+    const [status, setStatus] = useState<'CLEAN' | 'PENDING'>('CLEAN');
 
-    const fetchRecords = async () => {
+    // Professional Initials Logic ("William Dias" -> "WD")
+    const getInitials = (name: string | null | undefined) => {
+        if (!name) return '';
+        const names = name.trim().split(' ');
+        if (names.length === 1) return names[0].substring(0, 2).toUpperCase();
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    };
+
+    const defaultInitials = getInitials(session?.user?.name);
+
+    // Helper: ISO to 12h AM/PM format
+    const formatIsoTo12h = (isoString: string) => {
+        return new Date(isoString).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
+    // Fetch recent cleaning logs
+    const fetchLogs = useCallback(async (restaurantId: string) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/cleaning`, {
-                cache: 'no-store',
+            setIsFetchingLogs(true);
+            const res = await fetch(
+                `http://localhost:3001/api/logs/cleaning/${restaurantId}`,
+            );
+            if (res.ok) {
+                const data = await res.json();
+                setLogs(data);
+            }
+        } catch (err) {
+            console.error('Error fetching cleaning logs:', err);
+        } finally {
+            setIsFetchingLogs(false);
+        }
+    }, []);
+
+    // Initial Data Fetch
+    useEffect(() => {
+        const restaurantId = (session?.user as any)?.restaurantId;
+        if (restaurantId) fetchLogs(restaurantId);
+    }, [session, fetchLogs]);
+
+    // Form Submit
+    async function saveCleaningLog(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setIsLoading(true);
+
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+        const restaurantId = (session?.user as any)?.restaurantId;
+
+        try {
+            const res = await fetch('http://localhost:3001/api/logs/cleaning', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    restaurantId,
+                    area: formData.get('area'),
+                    status: status,
+                    initials: formData.get('initials'),
+                    comments: formData.get('comments') || '',
+                }),
             });
-            if (response.ok) {
-                const data = await response.json();
-                const sortedData = data.sort(
-                    (a: CleaningRecord, b: CleaningRecord) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime(),
-                );
-                setRecords(sortedData);
+
+            if (res.ok) {
+                form.reset();
+                setStatus('CLEAN');
+                toast.success('Cleaning task recorded!');
+                if (restaurantId) await fetchLogs(restaurantId);
+            } else {
+                toast.error('Error recording cleaning task.');
             }
         } catch (error) {
-            console.error('Failed to fetch records', error);
+            console.error('Error:', error);
+            toast.error('Server connection error.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    // Calculate dates helper (used in init and cancel)
-    const getInitialDates = () => {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const distanceToFriday = (5 - dayOfWeek + 7) % 7;
-        const friday = new Date(today);
-        friday.setDate(today.getDate() + distanceToFriday);
-
-        const formatYMD = (date: Date) => {
-            const offset = date.getTimezoneOffset() * 60000;
-            const localDate = new Date(date.getTime() - offset);
-            return localDate.toISOString().split('T')[0];
-        };
-
-        return {
-            weekEndingDate: formatYMD(friday),
-            dateCleaned: formatYMD(today),
-        };
-    };
-
-    useEffect(() => {
-        fetchRecords();
-        const initialDates = getInitialDates();
-        setFormData((prev) => ({
-            ...prev,
-            ...initialDates
-        }));
-    }, []);
-
-    // Enter Edit Mode
-    const handleEditClick = (record: CleaningRecord) => {
-        setEditingId(record.id);
-        
-        // Extract YYYY-MM-DD from the stored dates for the input fields
-        const formatForInput = (dateString: string) => {
-            const d = new Date(dateString);
-            return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        };
-
-        setFormData({
-            weekEndingDate: formatForInput(record.weekEndingDate),
-            dateCleaned: formatForInput(record.dateCleaned),
-            equipmentName: record.equipmentName,
-            cleanedBy: record.cleanedBy,
-        });
-        setStatusMessage('');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    // Cancel Edit Mode
-    const cancelEdit = () => {
-        setEditingId(null);
-        const initialDates = getInitialDates();
-        setFormData({
-            ...initialDates,
-            equipmentName: '',
-            cleanedBy: '',
-        });
-        setStatusMessage('');
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setStatusMessage(editingId ? 'Updating...' : 'Saving...');
-
-        try {
-            const method = editingId ? 'PUT' : 'POST';
-            const endpoint = editingId 
-                ? `${API_BASE_URL}/cleaning/${editingId}` 
-                : `${API_BASE_URL}/cleaning`;
-
-            const response = await fetch(endpoint, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            if (response.ok) {
-                setStatusMessage(editingId ? '✅ Success! Cleaning record updated.' : '✅ Success! Cleaning task recorded.');
-                cancelEdit();
-                fetchRecords();
-                setTimeout(() => setStatusMessage(''), 3000);
-            } else {
-                setStatusMessage('❌ Error saving record. Try again.');
-            }
-        } catch (error) {
-            setStatusMessage('❌ Failed to connect to server. Is the backend running?');
-        }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setStatusMessage('');
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+    }
 
     return (
-        <div className="max-w-4xl mx-auto mt-4 space-y-8">
-            <div className={`p-6 md:p-8 rounded-xl shadow-sm border ${editingId ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">
-                    {editingId ? '✏️ Edit Cleaning Task' : '✨ Log Cleaning Task'}
+        <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans relative">
+            <header className="mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    Cleaning Schedule ✨
                 </h2>
+                <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
+                    Track daily hygiene and sanitation tasks.
+                </p>
+            </header>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Week Ending (Friday)
-                            </label>
+            {/* INPUT FORM */}
+            <form
+                onSubmit={saveCleaningLog}
+                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
+            >
+                {/* STATUS SELECTOR */}
+                <div>
+                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
+                        Task Status
+                    </label>
+                    <div className="flex gap-3 sm:gap-4">
+                        <label className="flex-1 cursor-pointer">
                             <input
-                                type="date"
-                                name="weekEndingDate"
-                                value={formData.weekEndingDate}
-                                onChange={handleChange}
-                                required
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-600"
+                                type="radio"
+                                name="statusToggle"
+                                value="CLEAN"
+                                checked={status === 'CLEAN'}
+                                onChange={() => setStatus('CLEAN')}
+                                className="peer sr-only"
                             />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Date Cleaned
-                            </label>
-                            <input
-                                type="date"
-                                name="dateCleaned"
-                                value={formData.dateCleaned}
-                                onChange={handleChange}
-                                required
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            Equipment / Area
+                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all hover:bg-slate-100">
+                                ✨ Cleaned
+                            </div>
                         </label>
-                        <select
-                            name="equipmentName"
-                            value={formData.equipmentName}
-                            onChange={handleChange}
-                            required
-                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                        >
-                            <option value="">Select an area or equipment...</option>
-                            <option value="Dishwasher">Dishwasher</option>
-                            <option value="Combi Oven">Combi Oven</option>
-                            <option value="Fridges & Freezers">Fridges & Freezers</option>
-                            <option value="Preparation Tables">Preparation Tables</option>
-                            <option value="Sinks">Sinks</option>
-                            <option value="Floors & Walls">Floors & Walls</option>
-                            <option value="Extractor Canopy">Extractor Canopy</option>
-                            <option value="Microwaves">Microwaves</option>
-                            <option value="Bins & Waste Area">Bins & Waste Area</option>
-                        </select>
+                        <label className="flex-1 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="statusToggle"
+                                value="PENDING"
+                                checked={status === 'PENDING'}
+                                onChange={() => setStatus('PENDING')}
+                                className="peer sr-only"
+                            />
+                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 peer-checked:text-yellow-700 transition-all hover:bg-slate-100">
+                                ⏳ Pending
+                            </div>
+                        </label>
                     </div>
+                </div>
 
+                {/* AREA / EQUIPMENT */}
+                <div>
+                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                        Area / Equipment
+                    </label>
+                    <input
+                        type="text"
+                        name="area"
+                        required
+                        placeholder="Ex: Preparation Table, Floor, Dishwasher..."
+                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">
-                            Cleaned By (Initials)
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                            Your Initials
                         </label>
                         <input
                             type="text"
-                            name="cleanedBy"
-                            value={formData.cleanedBy}
-                            onChange={handleChange}
+                            name="initials"
                             required
-                            placeholder="e.g. WD"
-                            maxLength={3}
-                            className="w-32 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white uppercase"
+                            defaultValue={defaultInitials}
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
                         />
                     </div>
-
-                    <div className="flex gap-4 mt-4">
-                        <button
-                            type="submit"
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors active:scale-95"
-                        >
-                            {editingId ? 'Update Cleaning Record' : 'Save Cleaning Record'}
-                        </button>
-                        
-                        {editingId && (
-                            <button
-                                type="button"
-                                onClick={cancelEdit}
-                                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-lg transition-colors active:scale-95"
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
+                    <div>
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                            Comments{' '}
+                            <span className="text-slate-400 font-normal">
+                                (Optional)
+                            </span>
+                        </label>
+                        <input
+                            type="text"
+                            name="comments"
+                            placeholder="Ex: Sanitized with Blue Spray"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                        />
                     </div>
+                </div>
 
-                    {statusMessage && (
-                        <p className={`text-center font-medium mt-2 ${statusMessage.includes('Success') ? 'text-green-600' : 'text-red-600'}`}>
-                            {statusMessage}
-                        </p>
-                    )}
-                </form>
-            </div>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-lg shadow-md"
+                >
+                    {isLoading ? 'Saving...' : 'Save Cleaning Task'}
+                </button>
+            </form>
 
-            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-xl font-bold text-slate-800 mb-6">
-                    📋 Recent Cleaning Tasks
+            {/* RECENT RECORDS HISTORY */}
+            <div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
+                    Recent Cleaning Logs
                 </h3>
 
-                {isLoading ? (
-                    <p className="text-slate-500 text-sm text-center py-4">Loading records...</p>
-                ) : records.length === 0 ? (
-                    <p className="text-slate-500 text-sm text-center py-4">No cleaning tasks logged yet.</p>
+                {isFetchingLogs ? (
+                    <p className="text-slate-400 text-xs sm:text-sm animate-pulse font-medium">
+                        Loading history...
+                    </p>
+                ) : logs.length === 0 ? (
+                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-6 sm:p-8 text-center">
+                        <p className="text-slate-500 font-medium text-sm">
+                            No cleaning tasks found for today.
+                        </p>
+                    </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {records.map((record) => (
-                            <div
-                                key={record.id}
-                                className="border border-slate-200 rounded-xl p-5 bg-slate-50 hover:shadow-sm transition-shadow flex flex-col justify-between min-h-35"
-                            >
-                                <div>
-                                    <div className="flex justify-between items-start">
-                                        <h5 className="font-bold text-slate-800 text-lg mb-1">
-                                            {record.equipmentName}
-                                        </h5>
-                                        <button 
-                                            onClick={() => handleEditClick(record)}
-                                            className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                                            title="Edit Record"
-                                        >
-                                            ✏️
-                                        </button>
-                                    </div>
-                                    <p className="text-sm text-slate-500 flex items-center gap-2 mt-2">
-                                        <span>🧼</span>{' '}
-                                        {new Date(record.dateCleaned).toLocaleDateString()}
-                                    </p>
-                                </div>
+                    <div className="space-y-3 sm:space-y-4">
+                        {logs.slice(0, 10).map((log) => {
+                            const isClean = log.status === 'CLEAN';
 
-                                <div className="flex justify-between items-end mt-4 border-t border-slate-200 pt-3">
-                                    <div className="text-xs text-slate-400">
-                                        Week ending:
-                                        <br />
-                                        <span className="font-medium text-slate-500">
-                                            {new Date(record.weekEndingDate).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                    <div className="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-lg border border-blue-200 uppercase">
-                                        {record.cleanedBy}
+                            return (
+                                <div
+                                    key={log.id}
+                                    className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 transition-all hover:shadow-md"
+                                >
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <p className="font-bold text-slate-800 text-base sm:text-lg leading-none">
+                                                {log.area}
+                                            </p>
+                                            <span
+                                                className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${isClean ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
+                                            >
+                                                {log.status}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+                                            By{' '}
+                                            <span className="font-bold text-slate-500">
+                                                {log.initials}
+                                            </span>{' '}
+                                            • {formatIsoTo12h(log.createdAt)}
+                                        </p>
+                                        {log.comments && (
+                                            <p className="text-[10px] sm:text-xs text-slate-500 italic mt-1.5 flex items-center gap-1">
+                                                <span className="text-blue-400">
+                                                    💬
+                                                </span>{' '}
+                                                {log.comments}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
