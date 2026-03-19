@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function SettingPage() {
     const { data: session } = useSession();
@@ -22,7 +24,7 @@ export default function SettingPage() {
         });
 
         if (res.ok) {
-            alert('Equipment added successfully!');
+            toast.success('Equipment added successfully!');
             setEquipmentName('');
         }
     }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function SetupPage() {
     const router = useRouter();
@@ -41,13 +42,13 @@ export default function SetupPage() {
                 // Redirecting to the authentication gateway upon success
                 router.push('/login');
             } else {
-                alert(
+                toast.error(
                     'Failed to create account. Please check the backend terminal for logs.',
                 );
             }
         } catch (error) {
             console.error('Setup error:', error);
-            alert(
+            toast.error(
                 'Server connection error. Please ensure the backend is running on port 3001',
             );
         } finally {

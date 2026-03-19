@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
 
 export default function CookingPage() {
     const { data: session } = useSession();
@@ -82,11 +83,11 @@ export default function CookingPage() {
                 form.reset();
                 if (restaurantId) await fetchLogs(restaurantId);
             } else {
-                alert('❌ Error recording cooking log.');
+                toast.error('❌ Error recording cooking log.');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('❌ Server connection error.');
+            toast.error('❌ Server connection error.');
         } finally {
             setIsLoading(false);
         }
@@ -118,11 +119,11 @@ export default function CookingPage() {
                 setCoolingTargetId(null); // Close Modal
                 if (restaurantId) await fetchLogs(restaurantId); // Refresh List
             } else {
-                alert('❌ Error updating cooling log.');
+                toast.error('❌ Error updating cooling log.');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('❌ Server connection error.');
+            toast.error('❌ Server connection error.');
         } finally {
             setIsLoading(false);
         }

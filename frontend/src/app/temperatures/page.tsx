@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
 
 export default function TemperaturesPage() {
     const { data: session } = useSession();
@@ -101,16 +102,17 @@ export default function TemperaturesPage() {
             );
 
             if (res.ok) {
-                form.reset(); // Now this works perfectly!
+                form.reset();
+                toast.success('Temperature recorded');
                 if (restaurantId) await fetchLogs(restaurantId);
             } else {
                 // Handle custom duplicate errors from the backend
                 const errorData = await res.json();
-                alert(`❌ ${errorData.error}`);
+                toast.error(errorData.error);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('❌ Server connection error.');
+            toast.error('Server connection error.');
         } finally {
             setIsLoading(false);
         }

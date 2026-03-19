@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
 import NextAuthProvider from '@/components/providers/NextAuthProvider';
 import Navigation from './Navigation';
 import Header from '@/components/layout/Header';
+import { Toaster } from 'react-hot-toast';
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -22,6 +23,17 @@ export default function RootLayout({
                 suppressHydrationWarning
             >
                 <NextAuthProvider>
+                    <Toaster
+                        position="bottom-right"
+                        toastOptions={{
+                            duration: 4000,
+                            style: {
+                                background: '#fff',
+                                color: '#334155',
+                                fontWeight: 'semi-bold',
+                            },
+                        }}
+                    />
                     {/* Sidebar / Top bar (Fixed Background) */}
                     <aside className="w-full lg:w-64 bg-slate-950 text-slate-300 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800 shadow-xl z-10 shrink-0">
                         <div className="pt-5 px-6 lg:p-6">
