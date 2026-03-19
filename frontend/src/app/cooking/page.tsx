@@ -15,7 +15,6 @@ export default function CookingPage() {
         'Cooking',
     );
 
-    // State to control the Cooling Modal
     const [coolingTargetId, setCoolingTargetId] = useState<string | null>(null);
 
     const getInitials = (name: string | null | undefined) => {
@@ -49,7 +48,6 @@ export default function CookingPage() {
         if (restaurantId) fetchLogs(restaurantId);
     }, [session, fetchLogs]);
 
-    // STEP 1: Save Initial Cooking Record
     async function saveCookingLog(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setIsLoading(true);
@@ -81,19 +79,19 @@ export default function CookingPage() {
 
             if (res.ok) {
                 form.reset();
+                toast.success('Cooking record saved!');
                 if (restaurantId) await fetchLogs(restaurantId);
             } else {
-                toast.error('❌ Error recording cooking log.');
+                toast.error('Error recording cooking log.');
             }
         } catch (error) {
             console.error('Error:', error);
-            toast.error('❌ Server connection error.');
+            toast.error('Server connection error.');
         } finally {
             setIsLoading(false);
         }
     }
 
-    // STEP 2: Save Cooling Update via Modal
     async function saveCoolingUpdate(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         if (!coolingTargetId) return;
@@ -110,20 +108,21 @@ export default function CookingPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         coolingFinishTime: formData.get('coolingFinishTime'),
-                        coolingFinishTemp: formData.get('coolingFinishTemp'), // <-- Ajustado aqui
+                        coolingFinishTemp: formData.get('coolingFinishTemp'),
                     }),
                 },
             );
 
             if (res.ok) {
-                setCoolingTargetId(null); // Close Modal
-                if (restaurantId) await fetchLogs(restaurantId); // Refresh List
+                setCoolingTargetId(null);
+                toast.success('Cooling process logged!');
+                if (restaurantId) await fetchLogs(restaurantId);
             } else {
-                toast.error('❌ Error updating cooling log.');
+                toast.error('Error updating cooling log.');
             }
         } catch (error) {
             console.error('Error:', error);
-            toast.error('❌ Server connection error.');
+            toast.error('Server connection error.');
         } finally {
             setIsLoading(false);
         }
@@ -131,30 +130,37 @@ export default function CookingPage() {
 
     const getCurrentTimeStr = () => new Date().toTimeString().substring(0, 5);
 
+    // Helper function to force 12h display on the cards
+    const format12h = (time24: string) => {
+        if (!time24) return '';
+        const [h, m] = time24.split(':');
+        const hours = parseInt(h, 10);
+        const suffix = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours % 12 || 12;
+        return `${hours12}:${m} ${suffix}`;
+    };
+
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans relative">
-            <header className="mb-8">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+            <header className="mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                     Cooking & Cooling 👨‍🍳
                 </h2>
-                <p className="text-slate-500 font-medium mt-1">
+                <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
                     Record core temperatures and manage blast chilling.
                 </p>
             </header>
 
-            {/* ========================================= */}
-            {/* STEP 1: INITIAL COOKING FORM              */}
-            {/* ========================================= */}
             <form
                 onSubmit={saveCookingLog}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-6 mb-10"
+                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
             >
                 {/* PROCESS SELECTOR */}
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
                         Process
                     </label>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 sm:gap-4">
                         <label className="flex-1 cursor-pointer">
                             <input
                                 type="radio"
@@ -164,7 +170,7 @@ export default function CookingPage() {
                                 onChange={() => setProcessType('Cooking')}
                                 className="peer sr-only"
                             />
-                            <div className="text-center p-3 rounded-lg border-2 border-slate-100 bg-slate-50 font-bold text-slate-400 peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:text-orange-700 transition-all hover:bg-slate-100">
+                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:text-orange-700 transition-all hover:bg-slate-100">
                                 🔥 Cooking
                             </div>
                         </label>
@@ -177,7 +183,7 @@ export default function CookingPage() {
                                 onChange={() => setProcessType('Reheating')}
                                 className="peer sr-only"
                             />
-                            <div className="text-center p-3 rounded-lg border-2 border-slate-100 bg-slate-50 font-bold text-slate-400 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 transition-all hover:bg-slate-100">
+                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 transition-all hover:bg-slate-100">
                                 ♨️ Reheating
                             </div>
                         </label>
@@ -186,21 +192,21 @@ export default function CookingPage() {
 
                 {/* FOOD ITEM */}
                 <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">
+                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
                         Food Item
                     </label>
                     <input
                         type="text"
                         name="foodItem"
                         required
-                        placeholder="Ex: Roast Chicken, Beef Stew..."
-                        className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                        placeholder="Ex: Roast Chicken..."
+                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
                     />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
+                        <label className="block text-[11px] sm:text-sm font-bold text-slate-700 mb-1">
                             Core Temp
                         </label>
                         <input
@@ -209,26 +215,24 @@ export default function CookingPage() {
                             name="coreTemp"
                             required
                             placeholder="75.5"
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold text-red-600"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold text-red-600"
                         />
-                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase">
-                            Target: &gt;75°C
-                        </p>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
+                        <label className="block text-[11px] sm:text-sm font-bold text-slate-700 mb-1">
                             Time
                         </label>
+                        {/* NO CLOCK ICON MAGIC: [&::-webkit-calendar-picker-indicator]:hidden */}
                         <input
                             type="time"
                             name="timeChecked"
                             required
                             defaultValue={getCurrentTimeStr()}
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold [&::-webkit-calendar-picker-indicator]:hidden"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
+                        <label className="block text-[11px] sm:text-sm font-bold text-slate-700 mb-1">
                             Initials
                         </label>
                         <input
@@ -236,7 +240,7 @@ export default function CookingPage() {
                             name="initials"
                             required
                             defaultValue={defaultInitials}
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
                         />
                     </div>
                 </div>
@@ -244,17 +248,15 @@ export default function CookingPage() {
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-lg transition-colors disabled:opacity-50 text-lg shadow-md"
+                    className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-lg shadow-md"
                 >
-                    {isLoading ? 'Saving...' : 'Save Cooking Record'}
+                    {isLoading ? 'Saving...' : 'Save Record'}
                 </button>
             </form>
 
-            {/* ========================================= */}
-            {/* RECENT ACTIVITY & COOLING ACTIONS           */}
-            {/* ========================================= */}
+            {/* RECENT ACTIVITY & COOLING ACTIONS */}
             <div>
-                <h3 className="text-xl font-bold text-slate-800 mb-4">
+                <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
                     Active Kitchen Flow
                 </h3>
 
@@ -263,8 +265,8 @@ export default function CookingPage() {
                         Loading history...
                     </p>
                 ) : logs.length === 0 ? (
-                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-8 text-center">
-                        <p className="text-slate-500 font-medium">
+                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-6 sm:p-8 text-center">
+                        <p className="text-slate-500 font-medium text-sm">
                             No cooking records found today.
                         </p>
                     </div>
@@ -275,63 +277,56 @@ export default function CookingPage() {
                             const temp = isCooking
                                 ? log.cookTemp
                                 : log.reheatTemp;
-                            const time = isCooking
+                            const timeRaw = isCooking
                                 ? log.cookTime
                                 : log.reheatTime;
                             const isSafe = temp >= 75;
-                            const isCoolingPending = !log.coolingFinishTime; // Check if finish time exists
+                            const isCoolingPending = !log.coolingFinishTime;
 
                             return (
                                 <div
                                     key={log.id}
-                                    className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-4 transition-all hover:shadow-md"
+                                    className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-4 transition-all hover:shadow-md"
                                 >
-                                    {/* TOP ROW: Cooking Info */}
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <p className="font-bold text-slate-800 text-lg leading-none">
+                                                <p className="font-bold text-slate-800 text-base sm:text-lg leading-none">
                                                     {log.foodItem}
                                                 </p>
                                                 <span
-                                                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${isCooking ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                                                    className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${isCooking ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-red-50 text-red-700 border-red-200'}`}
                                                 >
                                                     {isCooking
                                                         ? 'Cooking'
                                                         : 'Reheating'}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                                            <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
                                                 By{' '}
                                                 <span className="font-bold text-slate-500">
                                                     {log.initials}
                                                 </span>{' '}
-                                                •{' '}
-                                                {new Date(
-                                                    log.createdAt,
-                                                ).toLocaleDateString(
-                                                    'en-GB',
-                                                )}{' '}
-                                                at {time}
+                                                • {format12h(timeRaw)}{' '}
+                                                {/* 12H FORMAT APPLIED HERE */}
                                             </p>
                                         </div>
 
                                         <span
-                                            className={`px-3 py-1.5 rounded-lg text-sm font-black shadow-sm border ${isSafe ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}
+                                            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-black shadow-sm border ${isSafe ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}
                                         >
                                             {temp}°C
                                         </span>
                                     </div>
 
-                                    {/* BOTTOM ROW: Cooling Action or Result */}
                                     <div className="pt-3 border-t border-slate-100">
                                         {isCoolingPending ? (
-                                            <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                            <div className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg border border-slate-200">
                                                 <div>
-                                                    <p className="text-xs font-bold text-slate-700">
+                                                    <p className="text-[11px] sm:text-xs font-bold text-slate-700">
                                                         Cooling Required
                                                     </p>
-                                                    <p className="text-[10px] font-medium text-slate-500">
+                                                    <p className="text-[9px] sm:text-[10px] font-medium text-slate-500">
                                                         Must reach 0-5°C within
                                                         120 mins.
                                                     </p>
@@ -342,21 +337,22 @@ export default function CookingPage() {
                                                             log.id,
                                                         )
                                                     }
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-md transition-colors shadow-sm"
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-bold py-1.5 sm:py-2 px-3 sm:px-4 rounded-md transition-colors shadow-sm"
                                                 >
                                                     ❄️ Record Cooling
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center gap-3">
-                                                <span className="flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
+                                            <div className="flex items-center gap-2 sm:gap-3">
+                                                <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-blue-700 bg-blue-50 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-blue-200">
                                                     ❄️ Cooled to{' '}
                                                     {log.coolingFinishTemp}°C at{' '}
-                                                    {log.coolingFinishTime}{' '}
-                                                    {/* Ajustado aqui */}
+                                                    {format12h(
+                                                        log.coolingFinishTime,
+                                                    )}
                                                 </span>
-                                                {log.coolingFinishTemp > 5 && ( // Ajustado aqui
-                                                    <span className="text-[10px] font-bold text-red-600 uppercase">
+                                                {log.coolingFinishTemp > 5 && (
+                                                    <span className="text-[9px] sm:text-[10px] font-bold text-red-600 uppercase">
                                                         ⚠️ Target Missed
                                                     </span>
                                                 )}
@@ -370,42 +366,39 @@ export default function CookingPage() {
                 )}
             </div>
 
-            {/* ========================================= */}
-            {/* STEP 2: COOLING MODAL                       */}
-            {/* ========================================= */}
+            {/* COOLING MODAL */}
             {coolingTargetId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-                        <div className="p-5 border-b border-slate-100 bg-blue-50/50">
-                            <h3 className="font-black text-slate-800 text-lg flex items-center gap-2">
+                        <div className="p-4 sm:p-5 border-b border-slate-100 bg-blue-50/50">
+                            <h3 className="font-black text-slate-800 text-base sm:text-lg flex items-center gap-2">
                                 ❄️ Log Cooling Process
                             </h3>
-                            <p className="text-xs font-medium text-slate-500 mt-1">
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1">
                                 Target: 0°C - 5°C within 2 hours.
                             </p>
                         </div>
 
                         <form
                             onSubmit={saveCoolingUpdate}
-                            className="p-5 flex flex-col gap-4"
+                            className="p-4 sm:p-5 flex flex-col gap-4"
                         >
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    <label className="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1">
                                         Final Temp (°C)
                                     </label>
-                                    {/* name ajustado aqui: */}
                                     <input
                                         type="number"
                                         step="0.1"
                                         name="coolingFinishTemp"
                                         required
                                         placeholder="Ex: 3.5"
-                                        className="w-full p-2.5 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-600"
+                                        className="w-full p-2 sm:p-2.5 text-sm sm:text-base border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-600"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                    <label className="block text-[11px] sm:text-xs font-bold text-slate-700 mb-1">
                                         Finish Time
                                     </label>
                                     <input
@@ -413,23 +406,23 @@ export default function CookingPage() {
                                         name="coolingFinishTime"
                                         required
                                         defaultValue={getCurrentTimeStr()}
-                                        className="w-full p-2.5 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                                        className="w-full p-2 sm:p-2.5 text-sm sm:text-base border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 font-bold [&::-webkit-calendar-picker-indicator]:hidden"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 mt-2">
+                            <div className="flex gap-2 sm:gap-3 mt-2">
                                 <button
                                     type="button"
                                     onClick={() => setCoolingTargetId(null)}
-                                    className="flex-1 py-2.5 rounded-lg font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                    className="flex-1 py-2 sm:py-2.5 rounded-lg text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="flex-1 py-2.5 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md"
+                                    className="flex-1 py-2 sm:py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md"
                                 >
                                     {isLoading ? 'Saving...' : 'Save'}
                                 </button>

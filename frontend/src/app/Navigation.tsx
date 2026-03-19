@@ -17,7 +17,7 @@ export default function Navigation() {
     ];
 
     return (
-        <nav className="flex flex-row lg:flex-col justify-center lg:justify-start gap-2 p-4 lg:p-6 overflow-x-auto lg:overflow-visible w-full">
+        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap px-4 py-2 custom-scrollbar-hide w-full max-w-[100vw]">
             {links.map((link) => {
                 const isActive = pathname === link.href;
 

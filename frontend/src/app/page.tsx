@@ -28,7 +28,6 @@ export default function Home() {
         setIsMounted(true);
 
         const fetchDashboardData = async () => {
-            // 🛡️ SAAS GUARD: Only fetch if authenticated and we have a Restaurant ID
             if (
                 status !== 'authenticated' ||
                 !(session?.user as any)?.restaurantId
@@ -53,7 +52,6 @@ export default function Home() {
                     }
                 };
 
-                // 🌐 MULTI-TENANT FETCH: Requesting data ONLY for this specific restaurant
                 const [temps, cooking, deliveries, cleanings] =
                     await Promise.all([
                         safeFetch(`/logs/temperatures/${restaurantId}`),
@@ -123,14 +121,13 @@ export default function Home() {
             }
         };
 
-        // Re-run fetch if session status changes
         fetchDashboardData();
     }, [session, status]);
 
     if (!isMounted || status === 'loading') {
         return (
             <div className="flex items-center justify-center h-screen">
-                <p className="text-slate-400 font-bold animate-pulse">
+                <p className="text-slate-400 font-bold animate-pulse text-sm sm:text-base">
                     Loading Kitchen Data...
                 </p>
             </div>
@@ -140,38 +137,57 @@ export default function Home() {
     const renderDateHeader = (dateStr: string) => {
         const todayStr = new Date().toLocaleDateString();
         return (
-            <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3 mt-4 first:mt-0">
+            <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3 mt-4 first:mt-0">
                 📅 {dateStr === todayStr ? 'Today' : dateStr}
             </h4>
         );
     };
 
+    // Helper function to force 12h display for "HH:mm" strings
+    const formatTimeStr12h = (time24: string) => {
+        if (!time24) return '';
+        const [h, m] = time24.split(':');
+        const hours = parseInt(h, 10);
+        const suffix = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = hours % 12 || 12;
+        return `${hours12}:${m} ${suffix}`;
+    };
+
+    // Helper for ISO Date objects
+    const formatIsoTo12h = (isoString: string) => {
+        return new Date(isoString).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-8 font-sans">
-            <header className="mb-8">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+            <header className="mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                     Dashboard
                 </h2>
-                <p className="text-slate-500 font-medium mt-1">
+                <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
                     Your kitchen overview and recent activities.
                 </p>
             </header>
 
             {/* SUMMARY STATS GRID */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
                 {/* TEMPS STAT */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
                         Temps Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-6 sm:h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <div className="flex items-end gap-2">
-                            <p className="text-3xl font-black text-slate-800 leading-none">
+                        <div className="flex items-end gap-1.5 sm:gap-2">
+                            <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
                                 {stats.tempsToday}
                             </p>
-                            <span className="text-blue-500 text-xs font-bold mb-1 block">
+                            <span className="text-blue-500 text-[10px] sm:text-xs font-bold mb-0.5 sm:mb-1 block">
                                 Logs
                             </span>
                         </div>
@@ -179,18 +195,18 @@ export default function Home() {
                 </div>
 
                 {/* COOKING STAT */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
                         Cooking Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-6 sm:h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <div className="flex items-end gap-2">
-                            <p className="text-3xl font-black text-slate-800 leading-none">
+                        <div className="flex items-end gap-1.5 sm:gap-2">
+                            <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
                                 {stats.cookingToday}
                             </p>
-                            <span className="text-orange-500 text-xs font-bold mb-1 block">
+                            <span className="text-orange-500 text-[10px] sm:text-xs font-bold mb-0.5 sm:mb-1 block">
                                 Meals
                             </span>
                         </div>
@@ -198,18 +214,18 @@ export default function Home() {
                 </div>
 
                 {/* DELIVERIES STAT */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
                         Deliveries Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-6 sm:h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <div className="flex items-end gap-2">
-                            <p className="text-3xl font-black text-slate-800 leading-none">
+                        <div className="flex items-end gap-1.5 sm:gap-2">
+                            <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
                                 {stats.deliveriesToday}
                             </p>
-                            <span className="text-indigo-500 text-xs font-bold mb-1 block">
+                            <span className="text-indigo-500 text-[10px] sm:text-xs font-bold mb-0.5 sm:mb-1 block">
                                 Received
                             </span>
                         </div>
@@ -217,18 +233,18 @@ export default function Home() {
                 </div>
 
                 {/* CLEANING STAT */}
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 className="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">
+                <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
                         Cleaning Today
                     </h3>
                     {isLoading ? (
-                        <div className="h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
+                        <div className="h-6 sm:h-8 w-12 bg-slate-100 animate-pulse rounded"></div>
                     ) : (
-                        <div className="flex items-end gap-2">
-                            <p className="text-3xl font-black text-slate-800 leading-none">
+                        <div className="flex items-end gap-1.5 sm:gap-2">
+                            <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
                                 {stats.cleaningsToday}
                             </p>
-                            <span className="text-emerald-500 text-xs font-bold mb-1 block">
+                            <span className="text-emerald-500 text-[10px] sm:text-xs font-bold mb-0.5 sm:mb-1 block">
                                 Tasks
                             </span>
                         </div>
@@ -237,19 +253,19 @@ export default function Home() {
             </div>
 
             {/* ACTIVITY CARDS GRID */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* --- TEMPERATURES CARD --- */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
                         🌡️ Recent Temperatures
                     </h3>
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {isLoading ? (
-                            <p className="text-slate-400 text-sm animate-pulse">
+                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
                                 Loading...
                             </p>
                         ) : Object.keys(activity.temps).length === 0 ? (
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-slate-400 text-xs sm:text-sm">
                                 No records found.
                             </p>
                         ) : (
@@ -257,15 +273,14 @@ export default function Home() {
                                 ([date, items]) => (
                                     <div key={date}>
                                         {renderDateHeader(date)}
-                                        <div className="space-y-3">
+                                        <div className="space-y-2 sm:space-y-3">
                                             {items.map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
+                                                    className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
                                                 >
                                                     <div>
-                                                        {/* LINE 1: Equipment Name + Shift Tag */}
-                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
                                                             <p className="font-bold text-slate-700 text-sm">
                                                                 {item.equipment
                                                                     ?.name ||
@@ -278,28 +293,19 @@ export default function Home() {
                                                                     'Morning'}
                                                             </span>
                                                         </div>
-                                                        {/* LINE 2: Initials + Time */}
-                                                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider">
                                                             By{' '}
                                                             <span className="font-bold text-slate-500">
                                                                 {item.initials}
                                                             </span>{' '}
                                                             •{' '}
-                                                            {new Date(
+                                                            {formatIsoTo12h(
                                                                 item.createdAt,
-                                                            ).toLocaleTimeString(
-                                                                'en-GB',
-                                                                {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit',
-                                                                },
                                                             )}
                                                         </p>
                                                     </div>
-
-                                                    {/* TEMPERATURE BADGE */}
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-md text-sm font-black shadow-sm ${item.temperature > 8 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}
+                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm ${item.temperature > 8 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}
                                                     >
                                                         {item.temperature}°C
                                                     </span>
@@ -314,17 +320,17 @@ export default function Home() {
                 </div>
 
                 {/* --- COOKING CARD --- */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
                         👨‍🍳 Cooking & Cooling
                     </h3>
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {isLoading ? (
-                            <p className="text-slate-400 text-sm animate-pulse">
+                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
                                 Loading...
                             </p>
                         ) : Object.keys(activity.cooking).length === 0 ? (
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-slate-400 text-xs sm:text-sm">
                                 No records found.
                             </p>
                         ) : (
@@ -332,7 +338,7 @@ export default function Home() {
                                 ([date, items]) => (
                                     <div key={date}>
                                         {renderDateHeader(date)}
-                                        <div className="space-y-3">
+                                        <div className="space-y-2 sm:space-y-3">
                                             {items.map((item) => {
                                                 const isCooking =
                                                     !!item.cookTemp;
@@ -347,11 +353,10 @@ export default function Home() {
                                                 return (
                                                     <div
                                                         key={item.id}
-                                                        className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
+                                                        className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
                                                     >
                                                         <div>
-                                                            {/* LINE 1: Food Item + Process Tag */}
-                                                            <div className="flex items-center gap-2 mb-0.5">
+                                                            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
                                                                 <p className="font-bold text-slate-700 text-sm">
                                                                     {
                                                                         item.foodItem
@@ -365,30 +370,29 @@ export default function Home() {
                                                                         : 'Reheating'}
                                                                 </span>
                                                             </div>
-                                                            {/* LINE 2: Initials + Time */}
-                                                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider">
                                                                 By{' '}
                                                                 <span className="font-bold text-slate-500">
                                                                     {
                                                                         item.initials
                                                                     }
                                                                 </span>{' '}
-                                                                • {time}
+                                                                •{' '}
+                                                                {formatTimeStr12h(
+                                                                    time,
+                                                                )}
                                                             </p>
                                                         </div>
 
                                                         <div className="flex flex-col items-end gap-1">
-                                                            {/* TEMPERATURE BADGE (Fica vermelho se < 75ºC) */}
                                                             <span
-                                                                className={`px-2.5 py-1 rounded-md text-sm font-black shadow-sm border ${isSafe ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}
+                                                                className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${isSafe ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}
                                                             >
                                                                 {temp}°C
                                                             </span>
-                                                            {/* COOLING BADGE */}
                                                             {item.coolingFinishTime && (
-                                                                <span className="text-[9px] font-bold text-blue-500 uppercase flex items-center gap-1 mt-0.5">
-                                                                    Cooling Done
-                                                                    ❄️
+                                                                <span className="text-[8px] sm:text-[9px] font-bold text-blue-500 uppercase flex items-center gap-1 mt-0.5">
+                                                                    Cooled ❄️
                                                                 </span>
                                                             )}
                                                         </div>
@@ -404,17 +408,17 @@ export default function Home() {
                 </div>
 
                 {/* --- DELIVERIES CARD --- */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
                         📦 Recent Deliveries
                     </h3>
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {isLoading ? (
-                            <p className="text-slate-400 text-sm animate-pulse">
+                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
                                 Loading...
                             </p>
                         ) : Object.keys(activity.deliveries).length === 0 ? (
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-slate-400 text-xs sm:text-sm">
                                 No records found.
                             </p>
                         ) : (
@@ -422,24 +426,30 @@ export default function Home() {
                                 ([date, items]) => (
                                     <div key={date}>
                                         {renderDateHeader(date)}
-                                        <div className="space-y-3">
+                                        <div className="space-y-2 sm:space-y-3">
                                             {items.map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                    className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
                                                 >
                                                     <div>
                                                         <p className="font-bold text-slate-700 text-sm">
                                                             {item.supplier}
                                                         </p>
-                                                        <p className="text-[10px] text-slate-400 font-medium">
+                                                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">
                                                             Inv:{' '}
-                                                            {item.invoiceNumber ||
-                                                                'N/A'}
+                                                            <span className="font-bold text-slate-500">
+                                                                {item.invoiceNumber ||
+                                                                    'N/A'}
+                                                            </span>{' '}
+                                                            •{' '}
+                                                            {formatIsoTo12h(
+                                                                item.createdAt,
+                                                            )}
                                                         </p>
                                                     </div>
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.condition === 'ACCEPT' ? 'bg-indigo-100 text-indigo-700' : 'bg-red-100 text-red-700'}`}
+                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${item.condition === 'ACCEPT' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-red-100 text-red-700 border-red-200'}`}
                                                     >
                                                         {item.condition ===
                                                         'ACCEPT'
@@ -457,17 +467,17 @@ export default function Home() {
                 </div>
 
                 {/* --- CLEANING CARD --- */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
                         ✨ Cleaning Tasks
                     </h3>
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {isLoading ? (
-                            <p className="text-slate-400 text-sm animate-pulse">
+                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
                                 Loading...
                             </p>
                         ) : Object.keys(activity.cleanings).length === 0 ? (
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-slate-400 text-xs sm:text-sm">
                                 No records found.
                             </p>
                         ) : (
@@ -475,22 +485,29 @@ export default function Home() {
                                 ([date, items]) => (
                                     <div key={date}>
                                         {renderDateHeader(date)}
-                                        <div className="space-y-3">
+                                        <div className="space-y-2 sm:space-y-3">
                                             {items.map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                    className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
                                                 >
                                                     <div>
                                                         <p className="font-bold text-slate-700 text-sm">
                                                             {item.area}
                                                         </p>
-                                                        <p className="text-[10px] text-slate-400 font-medium">
-                                                            By {item.initials}
+                                                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">
+                                                            By{' '}
+                                                            <span className="font-bold text-slate-500">
+                                                                {item.initials}
+                                                            </span>{' '}
+                                                            •{' '}
+                                                            {formatIsoTo12h(
+                                                                item.createdAt,
+                                                            )}
                                                         </p>
                                                     </div>
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.status === 'CLEAN' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'}`}
+                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${item.status === 'CLEAN' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}
                                                     >
                                                         {item.status}
                                                     </span>

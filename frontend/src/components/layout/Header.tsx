@@ -1,13 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
 
-/**
- * Global SaaS Header
- * Layout:
- * - LEFT: Restaurant Brand Name
- * - RIGHT: User Welcome, Date, Avatar, and Logout
- */
 export default function Header() {
     const { data: session } = useSession();
 
@@ -31,26 +26,35 @@ export default function Header() {
     const userName = session?.user?.name || 'Chef';
     const userInitials = getInitials(session?.user?.name);
 
-    // 3. Dynamic Restaurant Name (Assuming we pass it in the session)
-    // Fallback to "My Kitchen" if not loaded yet
+    // 3. Dynamic Restaurant Name
     const restaurantName =
         (session?.user as any)?.restaurantName || 'Kitchen Management';
 
     return (
-        <header className="bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
-            {/* 👈 LEFT: The Restaurant Brand */}
-            <div className="flex items-center gap-2">
-                <div className="w-2 h-6 bg-blue-600 rounded-full"></div>{' '}
-                {/* Accent Bar */}
-                <h2 className="text-lg font-semibold text-slate-800 tracking-tight">
-                    {restaurantName}
-                </h2>
+        <header className="bg-white border-b border-slate-200 p-3 sm:p-4 flex justify-between items-center sticky top-0 z-20 shadow-sm w-full">
+            {/* 👈 LEFT: The Restaurant Brand + CONDITIONAL MOBILE DATE */}
+            {/* Changes container to flex-col on mobile, flex-row items-center on Tablet (sm) */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0 pr-2">
+                {/* Wrapper for Bar + Name to always keep horizontal alignment */}
+                <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-5 bg-blue-600 rounded-full shrink-0"></div>
+                    <h2 className="text-sm sm:text-lg font-black text-slate-800 tracking-tight truncate">
+                        {restaurantName}
+                    </h2>
+                </div>
+
+                {/* ✅ NEW MOBILE DATE: Only visible on mobile, appears below name */}
+                {/* Added ml-3.5 to align with the name, past the blue accent bar */}
+                <p className="block sm:hidden text-[10px] font-medium text-slate-400 mt-0.5 ml-3.5 tabular-nums">
+                    {formattedDate}
+                </p>
             </div>
 
-            {/* 👉 RIGHT: User Identity & Date */}
-            <div className="flex items-center gap-4">
-                {/* Stacked Text Group */}
-                <div className="flex flex-col items-end">
+            {/* 👉 RIGHT: User Identity & Date (TABLET VIEW) */}
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                {/* Stacked Text Group - STANDARD TABLET VIEW */}
+                {/* Hidden on mobile (xs), shown on Tablet+ (sm) */}
+                <div className="hidden sm:flex flex-col items-end">
                     <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                             Welcome back,
@@ -59,27 +63,25 @@ export default function Header() {
                             {userName}
                         </span>
                     </div>
-
                     <span className="text-[10px] font-medium text-slate-400 mt-0.5 tabular-nums">
                         {formattedDate}
                     </span>
                 </div>
 
                 {/* Action Group: Avatar + Logout */}
-                <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm border-2 border-white ring-2 ring-slate-100 shadow-sm">
+                <div className="flex items-center gap-2 sm:gap-3 sm:pl-4 sm:border-l sm:border-slate-100">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm border-2 border-white ring-2 ring-slate-100 shadow-sm shrink-0">
                         {userInitials}
                     </div>
 
                     <button
                         onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        className="p-1.5 sm:p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                         title="Sign Out"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
+                            className="w-4 h-4 sm:w-5 sm:h-5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
