@@ -261,20 +261,34 @@ export default function Home() {
                                             {items.map((item) => (
                                                 <div
                                                     key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
+                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
                                                 >
                                                     <div>
-                                                        <p className="font-bold text-slate-700 text-sm">
-                                                            {item.equipment
-                                                                ?.name ||
-                                                                'Equipment'}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-400 font-medium">
-                                                            By {item.initials} •{' '}
+                                                        {/* LINE 1: Equipment Name + Shift Tag */}
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <p className="font-bold text-slate-700 text-sm">
+                                                                {item.equipment
+                                                                    ?.name ||
+                                                                    'Equipment'}
+                                                            </p>
+                                                            <span
+                                                                className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${item.timeChecked === 'Afternoon' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}
+                                                            >
+                                                                {item.timeChecked ||
+                                                                    'Morning'}
+                                                            </span>
+                                                        </div>
+                                                        {/* LINE 2: Initials + Time */}
+                                                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                                            By{' '}
+                                                            <span className="font-bold text-slate-500">
+                                                                {item.initials}
+                                                            </span>{' '}
+                                                            •{' '}
                                                             {new Date(
                                                                 item.createdAt,
                                                             ).toLocaleTimeString(
-                                                                [],
+                                                                'en-GB',
                                                                 {
                                                                     hour: '2-digit',
                                                                     minute: '2-digit',
@@ -282,8 +296,10 @@ export default function Home() {
                                                             )}
                                                         </p>
                                                     </div>
+
+                                                    {/* TEMPERATURE BADGE */}
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.temperature > 8 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                        className={`px-2.5 py-1 rounded-md text-sm font-black shadow-sm ${item.temperature > 8 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}
                                                     >
                                                         {item.temperature}°C
                                                     </span>
