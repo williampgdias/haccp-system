@@ -230,7 +230,7 @@ export default function TemperaturesPage() {
             {/* GROUPED DUAL-CARDS UI */}
             <div>
                 <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
-                    Today's Overview
+                    Today&apos;s Overview
                 </h3>
 
                 {isFetchingLogs ? (

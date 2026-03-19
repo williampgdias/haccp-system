@@ -1,4 +1,3 @@
-// frontend/src/app/Navigation.tsx
 'use client';
 
 import Link from 'next/link';
@@ -17,24 +16,37 @@ export default function Navigation() {
     ];
 
     return (
-        <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap px-4 py-2 custom-scrollbar-hide w-full max-w-[100vw]">
-            {links.map((link) => {
-                const isActive = pathname === link.href;
+        <aside className="bg-[#020617] text-white flex flex-col w-full lg:w-64 lg:min-h-screen border-b lg:border-b-0 lg:border-r border-slate-800 shrink-0">
+            {/* BRANDING - SEMPRE AQUI */}
+            <div className="p-4 lg:p-6">
+                <h1 className="text-xl font-black italic leading-none">
+                    HACCP Pro
+                </h1>
+                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">
+                    Kitchen Management
+                </p>
+            </div>
 
-                return (
-                    <Link
-                        key={link.href}
-                        href={link.href}
-                        className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                            isActive
-                                ? 'bg-blue-600 text-white'
-                                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                        }`}
-                    >
-                        {link.label}
-                    </Link>
-                );
-            })}
-        </nav>
+            {/* LINKS: Lado a lado (Mobile) | Um embaixo do outro (Desktop) */}
+            <nav className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-hidden px-4 lg:px-4 pb-4 lg:pb-0 gap-2 scrollbar-hide">
+                {links.map((link) => {
+                    const isActive = pathname === link.href;
+
+                    return (
+                        <Link
+                            key={link.href}
+                            href={link.href}
+                            className={`flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                                isActive
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                        >
+                            {link.label}
+                        </Link>
+                    );
+                })}
+            </nav>
+        </aside>
     );
 }

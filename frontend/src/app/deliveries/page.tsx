@@ -1,422 +1,281 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '../../services/api';
-
-interface DeliveryRecord {
-    id: string;
-    createdAt: string;
-    deliveryDate: string;
-    supplierName: string;
-    foodItem: string;
-    batchCode: string;
-    useByDate: string;
-    temperature: number;
-    isAppearanceAcceptable: boolean;
-    isVanChecked: boolean;
-    comments: string;
-    signature: string;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
 
 export default function DeliveriesPage() {
-    const [formData, setFormData] = useState({
-        deliveryDate: '',
-        supplierName: '',
-        foodItem: '',
-        batchCode: '',
-        useByDate: '',
-        temperature: '',
-        isAppearanceAcceptable: false,
-        isVanChecked: false,
-        comments: '',
-        signature: '',
-    });
+    const { data: session } = useSession();
 
-    const [statusMessage, setStatusMessage] = useState('');
-    const [records, setRecords] = useState<DeliveryRecord[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    
-    // State for editing mode
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [logs, setLogs] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingLogs, setIsFetchingLogs] = useState(true);
+    const [condition, setCondition] = useState<'ACCEPT' | 'REJECT'>('ACCEPT');
 
-    const fetchRecords = async () => {
+    // Professional Initials Logic ("William Dias" -> "WD")
+    const getInitials = (name: string | null | undefined) => {
+        if (!name) return '';
+        const names = name.trim().split(' ');
+        if (names.length === 1) return names[0].substring(0, 2).toUpperCase();
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    };
+
+    const defaultInitials = getInitials(session?.user?.name);
+
+    // Helper: ISO to 12h AM/PM format
+    const formatIsoTo12h = (isoString: string) => {
+        return new Date(isoString).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
+    // Fetch recent delivery logs
+    const fetchLogs = useCallback(async (restaurantId: string) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/deliveries`, {
-                cache: 'no-store',
+            setIsFetchingLogs(true);
+            const res = await fetch(
+                `http://localhost:3001/api/logs/delivery/${restaurantId}`,
+            );
+            if (res.ok) {
+                const data = await res.json();
+                setLogs(data);
+            }
+        } catch (err) {
+            console.error('Error fetching delivery logs:', err);
+        } finally {
+            setIsFetchingLogs(false);
+        }
+    }, []);
+
+    // Initial Data Fetch
+    useEffect(() => {
+        const restaurantId = (session?.user as any)?.restaurantId;
+        if (restaurantId) fetchLogs(restaurantId);
+    }, [session, fetchLogs]);
+
+    // Form Submit
+    async function saveDeliveryLog(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setIsLoading(true);
+
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+        const restaurantId = (session?.user as any)?.restaurantId;
+
+        const tempValue = formData.get('temperature') as string;
+
+        const payload = {
+            restaurantId,
+            supplier: formData.get('supplier'),
+            invoiceNumber: formData.get('invoiceNumber') || 'N/A',
+            temperature: tempValue ? parseFloat(tempValue) : null, // Temp is optional (e.g., dry goods)
+            condition: condition,
+            initials: formData.get('initials'),
+        };
+
+        try {
+            const res = await fetch('http://localhost:3001/api/logs/delivery', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
-            if (response.ok) {
-                const data = await response.json();
-                const sortedData = data.sort(
-                    (a: DeliveryRecord, b: DeliveryRecord) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime(),
-                );
-                setRecords(sortedData);
+
+            if (res.ok) {
+                form.reset();
+                setCondition('ACCEPT'); // Reset toggle
+                toast.success('Delivery record saved!');
+                if (restaurantId) await fetchLogs(restaurantId);
+            } else {
+                toast.error('Error recording delivery.');
             }
         } catch (error) {
-            console.error('Failed to fetch records', error);
+            console.error('Error:', error);
+            toast.error('Server connection error.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const getTodayLocalString = () => {
-        const today = new Date();
-        const offset = today.getTimezoneOffset() * 60000;
-        return new Date(today.getTime() - offset).toISOString().split('T')[0];
-    };
-
-    useEffect(() => {
-        fetchRecords();
-        setFormData((prev) => ({ ...prev, deliveryDate: getTodayLocalString() }));
-    }, []);
-
-    // Enter Edit Mode
-    const handleEditClick = (record: DeliveryRecord) => {
-        setEditingId(record.id);
-        
-        // Extract YYYY-MM-DD for date inputs
-        const formatForInput = (dateString: string) => {
-            const d = new Date(dateString);
-            return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        };
-
-        setFormData({
-            deliveryDate: formatForInput(record.deliveryDate),
-            supplierName: record.supplierName,
-            foodItem: record.foodItem,
-            batchCode: record.batchCode,
-            useByDate: formatForInput(record.useByDate),
-            temperature: record.temperature.toString(),
-            isAppearanceAcceptable: record.isAppearanceAcceptable,
-            isVanChecked: record.isVanChecked,
-            comments: record.comments || '',
-            signature: record.signature,
-        });
-        
-        setStatusMessage('');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    // Cancel Edit Mode
-    const cancelEdit = () => {
-        setEditingId(null);
-        setFormData({
-            deliveryDate: getTodayLocalString(),
-            supplierName: '',
-            foodItem: '',
-            batchCode: '',
-            useByDate: '',
-            temperature: '',
-            isAppearanceAcceptable: false,
-            isVanChecked: false,
-            comments: '',
-            signature: '',
-        });
-        setStatusMessage('');
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setStatusMessage(editingId ? 'Updating...' : 'Saving...');
-
-        try {
-            const method = editingId ? 'PUT' : 'POST';
-            const endpoint = editingId 
-                ? `${API_BASE_URL}/deliveries/${editingId}` 
-                : `${API_BASE_URL}/deliveries`;
-
-            const response = await fetch(endpoint, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    temperature: parseFloat(formData.temperature) || 0,
-                }),
-            });
-
-            if (response.ok) {
-                setStatusMessage(editingId ? '✅ Success! Delivery record updated.' : '✅ Success! Delivery record saved.');
-                cancelEdit();
-                fetchRecords();
-                setTimeout(() => setStatusMessage(''), 3000);
-            } else {
-                setStatusMessage('❌ Error saving record. Try again.');
-            }
-        } catch (error) {
-            setStatusMessage('❌ Failed to connect to server. Is the backend running?');
-        }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target;
-        setStatusMessage('');
-
-        if (type === 'checkbox') {
-            const checked = (e.target as HTMLInputElement).checked;
-            setFormData({ ...formData, [name]: checked });
-        } else {
-            setFormData({ ...formData, [name]: value });
-        }
-    };
+    }
 
     return (
-        <div className="max-w-4xl mx-auto mt-4 space-y-8">
-            <div className={`p-6 md:p-8 rounded-xl shadow-sm border ${editingId ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-200'}`}>
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">
-                    {editingId ? '✏️ Edit Delivery Record' : '📦 Log Delivery Record'}
+        <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans relative">
+            <header className="mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    Deliveries 📦
                 </h2>
+                <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
+                    Record incoming goods and traceability.
+                </p>
+            </header>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Delivery Date
-                            </label>
+            {/* ========================================= */}
+            {/* INPUT FORM                                  */}
+            {/* ========================================= */}
+            <form
+                onSubmit={saveDeliveryLog}
+                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
+            >
+                {/* CONDITION SELECTOR (Accept / Reject) */}
+                <div>
+                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
+                        Delivery Status
+                    </label>
+                    <div className="flex gap-3 sm:gap-4">
+                        <label className="flex-1 cursor-pointer">
                             <input
-                                type="date"
-                                name="deliveryDate"
-                                value={formData.deliveryDate}
-                                onChange={handleChange}
-                                required
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                type="radio"
+                                name="conditionToggle"
+                                value="ACCEPT"
+                                checked={condition === 'ACCEPT'}
+                                onChange={() => setCondition('ACCEPT')}
+                                className="peer sr-only"
                             />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Supplier Name
-                            </label>
-                            <input
-                                type="text"
-                                name="supplierName"
-                                value={formData.supplierName}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. Tesco"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Food Item
-                            </label>
-                            <input
-                                type="text"
-                                name="foodItem"
-                                value={formData.foodItem}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. Fresh Chicken"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Batch Code
-                            </label>
-                            <input
-                                type="text"
-                                name="batchCode"
-                                value={formData.batchCode}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. L12345"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Use By Date
-                            </label>
-                            <input
-                                type="date"
-                                name="useByDate"
-                                value={formData.useByDate}
-                                onChange={handleChange}
-                                required
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Temperature (°C)
-                            </label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                name="temperature"
-                                value={formData.temperature}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. 4.0"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex justify-around flex-col sm:flex-row gap-6 p-4 bg-white border border-slate-300 rounded-lg">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                name="isAppearanceAcceptable"
-                                checked={formData.isAppearanceAcceptable}
-                                onChange={handleChange}
-                                className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-semibold text-slate-700">
-                                Appearance Acceptable?
-                            </span>
+                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700 transition-all hover:bg-slate-100">
+                                ✅ Accept
+                            </div>
                         </label>
-
-                        <label className="flex items-center gap-3 cursor-pointer">
+                        <label className="flex-1 cursor-pointer">
                             <input
-                                type="checkbox"
-                                name="isVanChecked"
-                                checked={formData.isVanChecked}
-                                onChange={handleChange}
-                                className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                                type="radio"
+                                name="conditionToggle"
+                                value="REJECT"
+                                checked={condition === 'REJECT'}
+                                onChange={() => setCondition('REJECT')}
+                                className="peer sr-only"
                             />
-                            <span className="text-sm font-semibold text-slate-700">
-                                Van Checked & Clean?
-                            </span>
+                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 transition-all hover:bg-slate-100">
+                                ❌ Reject
+                            </div>
                         </label>
                     </div>
+                </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                        <div className="md:col-span-3">
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Comments / Corrective Actions
-                            </label>
-                            <textarea
-                                name="comments"
-                                value={formData.comments}
-                                onChange={handleChange}
-                                rows={2}
-                                placeholder="Any issues with the delivery?"
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white resize-none"
-                            ></textarea>
-                        </div>
+                {/* SUPPLIER & INVOICE */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                            Supplier
+                        </label>
+                        <input
+                            type="text"
+                            name="supplier"
+                            required
+                            placeholder="Ex: Sysco, Musgrave..."
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                            Invoice / PO Number
+                        </label>
+                        <input
+                            type="text"
+                            name="invoiceNumber"
+                            placeholder="Ex: INV-12345 (Optional)"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium uppercase"
+                        />
+                    </div>
+                </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">
-                                Signature (Initials)
-                            </label>
-                            <input
-                                type="text"
-                                name="signature"
-                                value={formData.signature}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. WD"
-                                maxLength={3}
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white uppercase"
-                            />
-                        </div>
+                {/* TEMP & INITIALS */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                        <label className="block text-[11px] sm:text-sm font-bold text-slate-700 mb-1">
+                            Goods Temp (°C)
+                        </label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            name="temperature"
+                            placeholder="Optional"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                        />
                     </div>
 
-                    <div className="flex gap-4 mt-2">
-                        <button
-                            type="submit"
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors active:scale-95"
-                        >
-                            {editingId ? 'Update Delivery Record' : 'Save Delivery Record'}
-                        </button>
-                        
-                        {editingId && (
-                            <button
-                                type="button"
-                                onClick={cancelEdit}
-                                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-8 rounded-lg transition-colors active:scale-95"
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
+                    <div>
+                        <label className="block text-[11px] sm:text-sm font-bold text-slate-700 mb-1">
+                            Initials
+                        </label>
+                        <input
+                            type="text"
+                            name="initials"
+                            required
+                            defaultValue={defaultInitials}
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
+                        />
                     </div>
+                </div>
 
-                    {statusMessage && (
-                        <p className={`mt-3 font-medium text-center ${statusMessage.includes('Success') ? 'text-green-600' : 'text-red-600'}`}>
-                            {statusMessage}
-                        </p>
-                    )}
-                </form>
-            </div>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="mt-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-lg shadow-md"
+                >
+                    {isLoading ? 'Saving...' : 'Save Delivery Record'}
+                </button>
+            </form>
 
-            <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
-                <h3 className="text-xl font-bold text-slate-800 mb-6">
-                    📋 Recent Deliveries
+            {/* ========================================= */}
+            {/* RECENT RECORDS HISTORY                      */}
+            {/* ========================================= */}
+            <div>
+                <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
+                    Recent Deliveries
                 </h3>
 
-                {isLoading ? (
-                    <p className="text-slate-500 text-sm text-center py-4">Loading records...</p>
-                ) : records.length === 0 ? (
-                    <p className="text-slate-500 text-sm text-center py-4">No deliveries logged yet.</p>
+                {isFetchingLogs ? (
+                    <p className="text-slate-400 text-xs sm:text-sm animate-pulse font-medium">
+                        Loading history...
+                    </p>
+                ) : logs.length === 0 ? (
+                    <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-6 sm:p-8 text-center">
+                        <p className="text-slate-500 font-medium text-sm">
+                            No delivery records found today.
+                        </p>
+                    </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {records.map((record) => (
-                            <div
-                                key={record.id}
-                                className="border border-slate-200 rounded-xl p-5 bg-slate-50 hover:shadow-sm transition-shadow relative"
-                            >
-                                <button 
-                                    onClick={() => handleEditClick(record)}
-                                    className="absolute top-5 right-5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                                    title="Edit Record"
+                    <div className="space-y-3 sm:space-y-4">
+                        {logs.slice(0, 10).map((log) => {
+                            const isAccepted = log.condition === 'ACCEPT';
+
+                            return (
+                                <div
+                                    key={log.id}
+                                    className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 transition-all hover:shadow-md"
                                 >
-                                    ✏️
-                                </button>
-                                
-                                <div className="flex justify-between items-start mb-4 pr-8">
                                     <div>
-                                        <h5 className="font-bold text-slate-700">
-                                            {record.supplierName}
-                                        </h5>
-                                        <p className="text-sm font-medium text-slate-800">
-                                            {record.foodItem}
-                                        </p>
-                                        <p className="text-xs text-slate-500 mt-1">
-                                            Delivered:{' '}
-                                            {new Date(record.deliveryDate).toLocaleDateString()}
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <p className="font-bold text-slate-800 text-base sm:text-lg leading-none">
+                                                {log.supplier}
+                                            </p>
+                                            <span
+                                                className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${isAccepted ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+                                            >
+                                                {isAccepted
+                                                    ? 'Received'
+                                                    : 'Rejected'}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+                                            Inv:{' '}
+                                            <span className="font-bold text-slate-500">
+                                                {log.invoiceNumber || 'N/A'}
+                                            </span>{' '}
+                                            • By {log.initials} •{' '}
+                                            {formatIsoTo12h(log.createdAt)}
                                         </p>
                                     </div>
-                                    <span
-                                        className={`px-2.5 py-1 rounded-md text-sm font-bold shadow-sm ${record.temperature > 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
-                                    >
-                                        {record.temperature}ºC
-                                    </span>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-2 text-sm text-slate-600 bg-white p-3 rounded-lg border border-slate-100 mb-4">
-                                    <p>
-                                        <span className="text-slate-400 block text-xs">Batch Code</span>
-                                        <span className="font-semibold">{record.batchCode}</span>
-                                    </p>
-                                    <p>
-                                        <span className="text-slate-400 block text-xs">Use By</span>
-                                        <span className="font-semibold">{new Date(record.useByDate).toLocaleDateString()}</span>
-                                    </p>
+                                    {log.temperature !== null && (
+                                        <span className="self-start sm:self-auto px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-black shadow-sm border bg-slate-50 text-slate-700 border-slate-200">
+                                            {log.temperature}°C
+                                        </span>
+                                    )}
                                 </div>
-
-                                <div className="flex flex-wrap gap-2 text-xs font-medium mb-3">
-                                    <span className={`px-2 py-1 rounded-md ${record.isAppearanceAcceptable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        {record.isAppearanceAcceptable ? '✅ Appearance OK' : '❌ Bad Appearance'}
-                                    </span>
-                                    <span className={`px-2 py-1 rounded-md ${record.isVanChecked ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        {record.isVanChecked ? '✅ Van Clean' : '❌ Van Dirty'}
-                                    </span>
-                                </div>
-                                
-                                {record.comments && (
-                                    <p className="text-sm text-slate-500 italic border-t border-slate-200 pt-3">
-                                        &quot;{record.comments}&quot;
-                                    </p>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
