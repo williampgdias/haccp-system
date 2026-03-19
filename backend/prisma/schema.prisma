@@ -76,6 +76,7 @@ model CookingLog {
 model TemperatureLog {
     id                  String              @id @default(uuid())
     temperature         Float
+    timeChecked         String              @default("Morning")
     initials            String
 
     equipmentId         String

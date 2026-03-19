@@ -88,20 +88,51 @@ router.get('/delivery/:restaurantId', async (req, res) => {
 
 router.post('/temperatures', async (req, res) => {
     try {
-        const { restaurantId, equipmentId, temperature, initials } = req.body;
+        const {
+            restaurantId,
+            equipmentId,
+            temperature,
+            initials,
+            timeChecked,
+        } = req.body;
 
+        // 1. Get the start of today to filter records
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        // 2. Check if a log already exists for THIS shift TODAY
+        const existingLog = await prisma.temperatureLog.findFirst({
+            where: {
+                restaurantId,
+                equipmentId,
+                timeChecked, // "Morning" or "Afternoon"
+                createdAt: {
+                    gte: startOfDay, // Greater than or equal to midnight today
+                },
+            },
+        });
+
+        // 3. Block it if it exists!
+        if (existingLog) {
+            return res.status(400).json({
+                error: `A ${timeChecked} record already exists for this equipment today.`,
+            });
+        }
+
+        // 4. If clear, save it!
         const log = await prisma.temperatureLog.create({
             data: {
                 restaurantId,
                 equipmentId,
                 temperature: parseFloat(temperature),
                 initials,
+                timeChecked,
             },
         });
         res.status(201).json(log);
     } catch (error) {
-        console.error('Temperature POST Error:', error);
-        res.status(500).json({ error: 'Failed to save temperature' });
+        console.error('Error saving temp:', error);
+        res.status(500).json({ error: 'Failed to create temperature log' });
     }
 });
 
