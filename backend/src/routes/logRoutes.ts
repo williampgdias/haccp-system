@@ -32,6 +32,23 @@ router.get('/cooking/:restaurantId', async (req, res) => {
     }
 });
 
+router.put('/cooking/:id/cooling', async (req, res) => {
+    try {
+        const { coolingFinishTime, coolingFinishTemp } = req.body;
+        const log = await prisma.cookingLog.update({
+            where: { id: req.params.id },
+            data: {
+                coolingFinishTime,
+                coolingFinishTemp: parseFloat(coolingFinishTemp),
+            },
+        });
+        res.json(log);
+    } catch (error) {
+        console.error('Error updating cooling log:', error);
+        res.status(500).json({ error: 'Failed to update cooling record' });
+    }
+});
+
 /**
  * CLEANING LOGS
  */

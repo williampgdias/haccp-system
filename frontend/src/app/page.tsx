@@ -333,35 +333,68 @@ export default function Home() {
                                     <div key={date}>
                                         {renderDateHeader(date)}
                                         <div className="space-y-3">
-                                            {items.map((item) => (
-                                                <div
-                                                    key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100"
-                                                >
-                                                    <div>
-                                                        <p className="font-bold text-slate-700 text-sm">
-                                                            {item.foodItem}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-400 font-medium">
-                                                            By {item.initials} •{' '}
-                                                            {item.cookTime ||
-                                                                item.reheatTime}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm bg-orange-100 text-orange-700">
-                                                            {item.cookTemp ||
-                                                                item.reheatTemp}
-                                                            °C
-                                                        </span>
-                                                        {item.coolingFinishTime && (
-                                                            <span className="text-[9px] font-bold text-blue-500 uppercase">
-                                                                Cooling Done ❄️
+                                            {items.map((item) => {
+                                                const isCooking =
+                                                    !!item.cookTemp;
+                                                const temp = isCooking
+                                                    ? item.cookTemp
+                                                    : item.reheatTemp;
+                                                const time = isCooking
+                                                    ? item.cookTime
+                                                    : item.reheatTime;
+                                                const isSafe = temp >= 75;
+
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
+                                                    >
+                                                        <div>
+                                                            {/* LINE 1: Food Item + Process Tag */}
+                                                            <div className="flex items-center gap-2 mb-0.5">
+                                                                <p className="font-bold text-slate-700 text-sm">
+                                                                    {
+                                                                        item.foodItem
+                                                                    }
+                                                                </p>
+                                                                <span
+                                                                    className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${isCooking ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}
+                                                                >
+                                                                    {isCooking
+                                                                        ? 'Cooking'
+                                                                        : 'Reheating'}
+                                                                </span>
+                                                            </div>
+                                                            {/* LINE 2: Initials + Time */}
+                                                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                                                By{' '}
+                                                                <span className="font-bold text-slate-500">
+                                                                    {
+                                                                        item.initials
+                                                                    }
+                                                                </span>{' '}
+                                                                • {time}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            {/* TEMPERATURE BADGE (Fica vermelho se < 75ºC) */}
+                                                            <span
+                                                                className={`px-2.5 py-1 rounded-md text-sm font-black shadow-sm border ${isSafe ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}
+                                                            >
+                                                                {temp}°C
                                                             </span>
-                                                        )}
+                                                            {/* COOLING BADGE */}
+                                                            {item.coolingFinishTime && (
+                                                                <span className="text-[9px] font-bold text-blue-500 uppercase flex items-center gap-1 mt-0.5">
+                                                                    Cooling Done
+                                                                    ❄️
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 ),
