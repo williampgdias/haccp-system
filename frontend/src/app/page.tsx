@@ -3,14 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../services/api';
+import { useSession } from 'next-auth/react';
 
 export default function Home() {
-    // --- HYDRATION FIX ---
+    const { data: session, status } = useSession();
     const [isMounted, setIsMounted] = useState(false);
-
     const [isLoading, setIsLoading] = useState(true);
 
-    // Stats for the top cards
     const [stats, setStats] = useState({
         tempsToday: 0,
         cookingToday: 0,
@@ -18,7 +17,6 @@ export default function Home() {
         cleaningsToday: 0,
     });
 
-    // Grouped data for each category card
     const [activity, setActivity] = useState({
         temps: {} as Record<string, any[]>,
         cooking: {} as Record<string, any[]>,
@@ -27,10 +25,19 @@ export default function Home() {
     });
 
     useEffect(() => {
-        // Tells Next.js that the component has safely mounted on the client
         setIsMounted(true);
 
         const fetchDashboardData = async () => {
+            // 🛡️ SAAS GUARD: Only fetch if authenticated and we have a Restaurant ID
+            if (
+                status !== 'authenticated' ||
+                !(session?.user as any)?.restaurantId
+            ) {
+                return;
+            }
+
+            const restaurantId = (session.user as any).restaurantId;
+
             try {
                 const safeFetch = async (endpoint: string) => {
                     try {
@@ -46,12 +53,13 @@ export default function Home() {
                     }
                 };
 
+                // 🌐 MULTI-TENANT FETCH: Requesting data ONLY for this specific restaurant
                 const [temps, cooking, deliveries, cleanings] =
                     await Promise.all([
-                        safeFetch('/daily-temperatures'),
-                        safeFetch('/cooking-logs'),
-                        safeFetch('/deliveries'),
-                        safeFetch('/cleaning'),
+                        safeFetch(`/logs/temperatures/${restaurantId}`),
+                        safeFetch(`/logs/cooking/${restaurantId}`),
+                        safeFetch(`/logs/delivery/${restaurantId}`),
+                        safeFetch(`/logs/cleaning/${restaurantId}`),
                     ]);
 
                 const todayStr = new Date().toLocaleDateString();
@@ -115,15 +123,20 @@ export default function Home() {
             }
         };
 
+        // Re-run fetch if session status changes
         fetchDashboardData();
-    }, []);
+    }, [session, status]);
 
-    // Hydration safeguard: Do not render HTML until client is ready
-    if (!isMounted) {
-        return null; // Or return a simple loading spinner if you prefer
+    if (!isMounted || status === 'loading') {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <p className="text-slate-400 font-bold animate-pulse">
+                    Loading Kitchen Data...
+                </p>
+            </div>
+        );
     }
 
-    // Helper to render the date headers nicely
     const renderDateHeader = (dateStr: string) => {
         const todayStr = new Date().toLocaleDateString();
         return (
@@ -135,7 +148,6 @@ export default function Home() {
 
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-8 font-sans">
-            {/* PAGE HEADER */}
             <header className="mb-8">
                 <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                     Dashboard
@@ -145,9 +157,7 @@ export default function Home() {
                 </p>
             </header>
 
-            {/* ========================================= */}
-            {/* SUMMARY STATS GRID                          */}
-            {/* ========================================= */}
+            {/* SUMMARY STATS GRID */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
                 {/* TEMPS STAT */}
                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -226,9 +236,7 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* ========================================= */}
-            {/* ACTIVITY CARDS GRID                         */}
-            {/* ========================================= */}
+            {/* ACTIVITY CARDS GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* --- TEMPERATURES CARD --- */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-96">
@@ -257,14 +265,25 @@ export default function Home() {
                                                 >
                                                     <div>
                                                         <p className="font-bold text-slate-700 text-sm">
-                                                            {item.unitName}
+                                                            {item.equipment
+                                                                ?.name ||
+                                                                'Equipment'}
                                                         </p>
                                                         <p className="text-[10px] text-slate-400 font-medium">
-                                                            {item.timeChecked}
+                                                            By {item.initials} •{' '}
+                                                            {new Date(
+                                                                item.createdAt,
+                                                            ).toLocaleTimeString(
+                                                                [],
+                                                                {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                },
+                                                            )}
                                                         </p>
                                                     </div>
                                                     <span
-                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.temperature > 8 && !item.unitName.includes('Dishwasher') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.temperature > 8 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                                                     >
                                                         {item.temperature}°C
                                                     </span>
@@ -362,14 +381,21 @@ export default function Home() {
                                                 >
                                                     <div>
                                                         <p className="font-bold text-slate-700 text-sm">
-                                                            {item.supplierName}
+                                                            {item.supplier}
                                                         </p>
                                                         <p className="text-[10px] text-slate-400 font-medium">
-                                                            {item.foodItem}
+                                                            Inv:{' '}
+                                                            {item.invoiceNumber ||
+                                                                'N/A'}
                                                         </p>
                                                     </div>
-                                                    <span className="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm bg-indigo-100 text-indigo-700">
-                                                        Received
+                                                    <span
+                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.condition === 'ACCEPT' ? 'bg-indigo-100 text-indigo-700' : 'bg-red-100 text-red-700'}`}
+                                                    >
+                                                        {item.condition ===
+                                                        'ACCEPT'
+                                                            ? 'Received'
+                                                            : 'Rejected'}
                                                     </span>
                                                 </div>
                                             ))}
@@ -408,15 +434,16 @@ export default function Home() {
                                                 >
                                                     <div>
                                                         <p className="font-bold text-slate-700 text-sm">
-                                                            {item.equipmentName}
+                                                            {item.area}
                                                         </p>
                                                         <p className="text-[10px] text-slate-400 font-medium">
-                                                            Cleaned by{' '}
-                                                            {item.cleanedBy}
+                                                            By {item.initials}
                                                         </p>
                                                     </div>
-                                                    <span className="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm bg-emerald-100 text-emerald-700">
-                                                        Done
+                                                    <span
+                                                        className={`px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${item.status === 'CLEAN' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'}`}
+                                                    >
+                                                        {item.status}
                                                     </span>
                                                 </div>
                                             ))}
