@@ -3,8 +3,10 @@
 import { useSession, signOut } from 'next-auth/react';
 
 /**
- * Global Executive Header
- * Layout: Welcome & Name (Horizontal) with Date (Underneath) on the right side.
+ * Global SaaS Header
+ * Layout:
+ * - LEFT: Restaurant Brand Name
+ * - RIGHT: User Welcome, Date, Avatar, and Logout
  */
 export default function Header() {
     const { data: session } = useSession();
@@ -29,28 +31,41 @@ export default function Header() {
     const userName = session?.user?.name || 'Chef';
     const userInitials = getInitials(session?.user?.name);
 
+    // 3. Dynamic Restaurant Name (Assuming we pass it in the session)
+    // Fallback to "My Kitchen" if not loaded yet
+    const restaurantName =
+        (session?.user as any)?.restaurantName || 'Kitchen Management';
+
     return (
-        <header className="bg-white border-b border-slate-200 p-4 flex justify-end items-center sticky top-0 z-20 shadow-sm">
+        <header className="bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+            {/* 👈 LEFT: The Restaurant Brand */}
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-6 bg-blue-600 rounded-full"></div>{' '}
+                {/* Accent Bar */}
+                <h2 className="text-lg font-semibold text-slate-800 tracking-tight">
+                    {restaurantName}
+                </h2>
+            </div>
+
+            {/* 👉 RIGHT: User Identity & Date */}
             <div className="flex items-center gap-4">
-                {/* 📝 Text Group: Name and Date stacked vertically */}
+                {/* Stacked Text Group */}
                 <div className="flex flex-col items-end">
-                    {/* Top Line: Welcome + Name side-by-side */}
                     <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                             Welcome back,
                         </span>
-                        <span className="text-sm font-bold text-slate-950">
+                        <span className="text-sm font-black text-slate-800 italic">
                             {userName}
                         </span>
                     </div>
 
-                    {/* Bottom Line: Small Date */}
                     <span className="text-[10px] font-medium text-slate-400 mt-0.5 tabular-nums">
                         {formattedDate}
                     </span>
                 </div>
 
-                {/* 👤 Identity Group: Avatar + Logout */}
+                {/* Action Group: Avatar + Logout */}
                 <div className="flex items-center gap-3 pl-4 border-l border-slate-100">
                     <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm border-2 border-white ring-2 ring-slate-100 shadow-sm">
                         {userInitials}
