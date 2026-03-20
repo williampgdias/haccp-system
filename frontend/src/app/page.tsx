@@ -449,11 +449,18 @@ export default function Home() {
                                                         </p>
                                                     </div>
                                                     <span
-                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${item.condition === 'ACCEPT' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-red-100 text-red-700 border-red-200'}`}
+                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${
+                                                            parseFloat(
+                                                                item.temperature,
+                                                            ) <= 5
+                                                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                                                                : 'bg-red-100 text-res-700 border-red-200'
+                                                        }`}
                                                     >
-                                                        {item.condition ===
-                                                        'ACCEPT'
-                                                            ? 'Received'
+                                                        {parseFloat(
+                                                            item.temperature,
+                                                        ) <= 5
+                                                            ? 'Accepted'
                                                             : 'Rejected'}
                                                     </span>
                                                 </div>
