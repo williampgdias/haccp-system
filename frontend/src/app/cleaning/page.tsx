@@ -113,7 +113,7 @@ export default function CleaningPage() {
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                     Cleaning Schedule ✨
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
@@ -124,50 +124,42 @@ export default function CleaningPage() {
             {/* FORM SECTION */}
             <form
                 onSubmit={saveCleaningLog}
-                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8"
+                className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
             >
-                {/* STATUS TOGGLE */}
+                {/* STATUS TOGGLE - FIXED: BUTTON STYLE APPLIED */}
                 <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
+                    <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         Task Status
                     </label>
-                    <div className="flex gap-3">
-                        <label className="flex-1 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="statusToggle"
-                                checked={status === 'CLEAN'}
-                                onChange={() => setStatus('CLEAN')}
-                                className="peer sr-only"
-                            />
-                            <div className="text-center p-2.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-400 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 transition-all">
-                                ✨ Cleaned
-                            </div>
-                        </label>
-                        <label className="flex-1 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="statusToggle"
-                                checked={status === 'PENDING'}
-                                onChange={() => setStatus('PENDING')}
-                                className="peer sr-only"
-                            />
-                            <div className="text-center p-2.5 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm font-bold text-slate-400 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 peer-checked:text-yellow-700 transition-all">
-                                ⏳ Pending
-                            </div>
-                        </label>
+                    <div className="flex gap-3 sm:gap-4">
+                        <button
+                            type="button"
+                            onClick={() => setStatus('CLEAN')}
+                            className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                ${status === 'CLEAN' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                        >
+                            ✨ Cleaned
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setStatus('PENDING')}
+                            className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                ${status === 'PENDING' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                        >
+                            ⏳ Pending
+                        </button>
                     </div>
                 </div>
 
                 {/* DYNAMIC SELECT: Loaded from Settings */}
                 <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                    <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         Area / Equipment
                     </label>
                     <select
                         name="areaId"
                         required
-                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
+                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                     >
                         <option value="">Select an area...</option>
                         {areas.map((a) => (
@@ -180,7 +172,7 @@ export default function CleaningPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Your Initials
                         </label>
                         <input
@@ -188,11 +180,11 @@ export default function CleaningPage() {
                             name="initials"
                             required
                             defaultValue={defaultInitials}
-                            className="w-full p-2.5 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold uppercase"
                         />
                     </div>
                     <div>
-                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Comments{' '}
                             <span className="text-slate-400 font-normal">
                                 (Optional)
@@ -202,7 +194,7 @@ export default function CleaningPage() {
                             type="text"
                             name="comments"
                             placeholder="Ex: Sanitized with Blue Spray"
-                            className="w-full p-2.5 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
                 </div>
@@ -210,7 +202,7 @@ export default function CleaningPage() {
                 <button
                     type="submit"
                     disabled={isLoading || areas.length === 0}
-                    className="mt-2 bg-slate-900 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors text-sm sm:text-base shadow-md disabled:opacity-50"
+                    className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
                 >
                     {isLoading
                         ? 'Saving...'

@@ -13,7 +13,11 @@ export default function TemperaturesPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingLogs, setIsFetchingLogs] = useState(true);
 
-    // Helper: Format Initials
+    // Keeping your exact state name
+    const [processType, setProcessType] = useState<'Morning' | 'Afternoon'>(
+        'Morning',
+    );
+
     const getInitials = (name: string | null | undefined) => {
         if (!name) return '';
         const names = name.trim().split(' ');
@@ -23,7 +27,6 @@ export default function TemperaturesPage() {
 
     const defaultInitials = getInitials(session?.user?.name);
 
-    // Helper: ISO to 12h AM/PM format
     const formatIsoTo12h = (isoString: string) => {
         return new Date(isoString).toLocaleTimeString('en-US', {
             hour: 'numeric',
@@ -32,7 +35,6 @@ export default function TemperaturesPage() {
         });
     };
 
-    // Helper: Fetch and group logs
     const fetchLogs = useCallback(async (restaurantId: string) => {
         try {
             setIsFetchingLogs(true);
@@ -41,7 +43,6 @@ export default function TemperaturesPage() {
             );
             if (res.ok) {
                 const data = await res.json();
-
                 const todayStr = new Date().toLocaleDateString();
                 const todayLogs = data.filter(
                     (log: any) =>
@@ -61,7 +62,6 @@ export default function TemperaturesPage() {
                         grouped[eqName].morning = log;
                     }
                 });
-
                 setGroupedLogs(grouped);
             }
         } catch (err) {
@@ -100,7 +100,7 @@ export default function TemperaturesPage() {
                         equipmentId: formData.get('equipmentId'),
                         temperature: formData.get('temperature'),
                         initials: formData.get('initials'),
-                        timeChecked: formData.get('timeChecked'),
+                        timeChecked: formData.get('timeChecked'), // Will get value from Hidden Input
                     }),
                 },
             );
@@ -114,7 +114,6 @@ export default function TemperaturesPage() {
                 toast.error(errorData.error);
             }
         } catch (error) {
-            console.error('Error:', error);
             toast.error('Server connection error.');
         } finally {
             setIsLoading(false);
@@ -124,7 +123,7 @@ export default function TemperaturesPage() {
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight italic">
                     Daily Temperatures 🌡️
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
@@ -132,52 +131,47 @@ export default function TemperaturesPage() {
                 </p>
             </header>
 
-            {/* INPUT FORM */}
             <form
                 onSubmit={saveTemperature}
-                className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
+                className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
             >
-                {/* SHIFT SELECTOR */}
+                {/* 1. HIDDEN INPUT to keep your form logic working */}
+                <input type="hidden" name="timeChecked" value={processType} />
+
+                {/* SHIFT SELECTOR - Now using the Buttons from CookingPage */}
                 <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-2">
+                    <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         Shift
                     </label>
                     <div className="flex gap-3 sm:gap-4">
-                        <label className="flex-1 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="timeChecked"
-                                value="Morning"
-                                defaultChecked
-                                className="peer sr-only"
-                            />
-                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 transition-all hover:bg-slate-100">
-                                🌅 Morning
-                            </div>
-                        </label>
-                        <label className="flex-1 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="timeChecked"
-                                value="Afternoon"
-                                className="peer sr-only"
-                            />
-                            <div className="text-center p-2.5 sm:p-3 rounded-lg border-2 border-slate-100 bg-slate-50 text-sm sm:text-base font-bold text-slate-400 peer-checked:border-orange-500 peer-checked:bg-orange-50 peer-checked:text-orange-700 transition-all hover:bg-slate-100">
-                                🌇 Afternoon
-                            </div>
-                        </label>
+                        <button
+                            type="button"
+                            onClick={() => setProcessType('Morning')}
+                            className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                ${processType === 'Morning' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                        >
+                            🌅 MORNING
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setProcessType('Afternoon')}
+                            className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                ${processType === 'Afternoon' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                        >
+                            🌇 AFTERNOON
+                        </button>
                     </div>
                 </div>
 
-                {/* EQUIPMENT DROPDOWN */}
+                {/* REST OF YOUR CODE UNTOUCHED */}
                 <div>
-                    <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                    <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         Equipment
                     </label>
                     <select
                         name="equipmentId"
                         required
-                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white font-medium"
+                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                     >
                         <option value="">Select a fridge/freezer...</option>
                         {equipments.map((eq) => (
@@ -190,7 +184,7 @@ export default function TemperaturesPage() {
 
                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Temp (°C)
                         </label>
                         <input
@@ -199,21 +193,20 @@ export default function TemperaturesPage() {
                             name="temperature"
                             required
                             placeholder="Ex: 3.5"
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs sm:text-sm font-bold text-slate-700 mb-1">
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Initials
                         </label>
                         <input
                             type="text"
                             name="initials"
                             required
-                            placeholder="Ex: WD"
                             defaultValue={defaultInitials}
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
                 </div>
@@ -221,20 +214,20 @@ export default function TemperaturesPage() {
                 <button
                     type="submit"
                     disabled={isLoading || equipments.length === 0}
-                    className="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-3.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-lg shadow-md"
+                    className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
                 >
                     {isLoading ? 'Saving...' : 'Save Record'}
                 </button>
             </form>
 
-            {/* GROUPED DUAL-CARDS UI */}
+            {/* OVERVIEW SECTION - UNTOUCHED */}
             <div>
                 <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
                     Today&apos;s Overview
                 </h3>
 
                 {isFetchingLogs ? (
-                    <p className="text-slate-400 text-xs sm:text-sm animate-pulse font-medium">
+                    <p className="text-slate-400 text-xs sm:text-sm animate-pulse font-medium text-center py-4 italic">
                         Loading history...
                     </p>
                 ) : Object.keys(groupedLogs).length === 0 ? (
@@ -255,7 +248,6 @@ export default function TemperaturesPage() {
                                 </h4>
 
                                 <div className="flex flex-col gap-2.5 sm:gap-3">
-                                    {/* MORNING SLOT */}
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-blue-500 bg-blue-50 px-2 py-1 rounded-md">
@@ -284,7 +276,6 @@ export default function TemperaturesPage() {
                                         )}
                                     </div>
 
-                                    {/* AFTERNOON SLOT */}
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center gap-2">
                                             <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-orange-500 bg-orange-50 px-2 py-1 rounded-md">

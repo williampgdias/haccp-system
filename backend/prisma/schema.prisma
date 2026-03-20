@@ -91,11 +91,13 @@ model TemperatureLog {
 
 model DeliveryLog {
     id                  String              @id @default(uuid())
+    category            String
+    productName         String
     supplier            String
-    invoiceNumber       String?
-    temperature         Float?
-    condition           String
+    invoiceNumber       String
+    temperature         Float
     initials            String
+    comments            String?
     
     restaurantId        String
     restaurant          Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -104,12 +106,12 @@ model DeliveryLog {
 }
 
 model CleaningArea {
-  id                    String              @id @default(uuid())
-  name                  String
-  restaurantId          String
-  restaurant            Restaurant          @relation(fields: [restaurantId], references: [id])
+    id                  String              @id @default(uuid())
+    name                String
+    restaurantId        String
+    restaurant          Restaurant          @relation(fields: [restaurantId], references: [id])
 
-  logs                  CleaningLog[]
+    logs                CleaningLog[]
 }
 model CleaningLog {
     id                  String              @id @default(uuid())

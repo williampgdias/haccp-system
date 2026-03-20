@@ -101,7 +101,7 @@ export default function SettingsPage() {
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                     Kitchen Setup ⚙️
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
@@ -112,7 +112,7 @@ export default function SettingsPage() {
             <div className="space-y-8">
                 {/* FRIDGES SECTION */}
                 <section>
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">
+                    <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         ❄️ Cold Storage
                     </h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -124,11 +124,11 @@ export default function SettingsPage() {
                                 name="name"
                                 required
                                 placeholder="New Fridge Name..."
-                                className="flex-1 p-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                             />
                             <button
                                 disabled={isLoading}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-black shadow-sm"
+                                className="px-4 py-2 bg-slate-950 text-white font-semi-bold rounded-lg hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
                             >
                                 Add
                             </button>
@@ -158,7 +158,7 @@ export default function SettingsPage() {
 
                 {/* CLEANING AREAS SECTION */}
                 <section>
-                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">
+                    <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         ✨ Cleaning Zones
                     </h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -170,16 +170,16 @@ export default function SettingsPage() {
                                 name="name"
                                 required
                                 placeholder="New Area Name..."
-                                className="flex-1 p-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                             />
                             <button
                                 disabled={isLoading}
-                                className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-black shadow-sm"
+                                className="px-4 py-2 bg-slate-950 text-white font-semi-bold rounded-lg hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
                             >
                                 Add
                             </button>
                         </form>
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-slate-100 py-2">
                             {areas.map((a) => (
                                 <div
                                     key={a.id}

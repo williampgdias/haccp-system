@@ -165,7 +165,7 @@ export default function Home() {
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                     Dashboard
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">

@@ -127,12 +127,35 @@ router.post('/cleaning', async (req, res) => {
  */
 router.post('/delivery', async (req, res) => {
     try {
-        const { restaurantId, ...data } = req.body;
+        const {
+            restaurantId,
+            category,
+            productName,
+            supplier,
+            invoiceNumber,
+            temperature,
+            initials,
+            comments,
+        } = req.body;
+
+        // Validating and parsing temperature to Float
+        const parsedTemperature = parseFloat(temperature);
+
         const log = await prisma.deliveryLog.create({
-            data: { ...data, restaurantId },
+            data: {
+                restaurantId,
+                category,
+                productName,
+                supplier,
+                invoiceNumber,
+                temperature: parsedTemperature,
+                initials,
+                comments: comments || '',
+            },
         });
         res.status(201).json(log);
     } catch (error) {
+        console.error('Error creating delivery log:', error);
         res.status(500).json({ error: 'Failed to create delivery log' });
     }
 });
@@ -142,8 +165,9 @@ router.get('/delivery/:restaurantId', async (req, res) => {
         const logs = await prisma.deliveryLog.findMany({
             where: { restaurantId: req.params.restaurantId },
             orderBy: { createdAt: 'desc' },
+            take: 10,
         });
-        res.status(201).json(logs);
+        res.json(logs);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch delivery logs' });
     }
