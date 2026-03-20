@@ -1,113 +1,89 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 export default function SetupPage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
 
-    /**
-     * Handles the form submission for the initial SaaS setup.
-     * This function sends the payload to create the first Tenant (Restaurant)
-     * and its associated Admin User (Head Chef/Manager) simultaneously;
-     */
-    async function createAccount(e: React.FormEvent<HTMLFormElement>) {
+    async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        setIsLoading(true);
-
         const formData = new FormData(e.currentTarget);
-        const restaurantName = formData.get('restaurantName') as string;
-        const userName = formData.get('userName') as string;
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
-        const role = formData.get('role') as string;
+        const data = Object.fromEntries(formData);
 
         try {
-            // Dispatching the nested write request to our Express backend
-            const res = await fetch('http://localhost:3001/api/setup', {
+            const res = await fetch('http://localhost:3001/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    restaurantName,
-                    userName,
-                    email,
-                    password,
-                    role,
-                }),
+                body: JSON.stringify(data),
             });
 
             if (res.ok) {
-                // Redirecting to the authentication gateway upon success
+                toast.success('Account created! Please sign in.');
                 router.push('/login');
             } else {
-                toast.error(
-                    'Failed to create account. Please check the backend terminal for logs.',
-                );
+                toast.error('Registration failed. Email might be in use.');
             }
         } catch (error) {
-            console.error('Setup error:', error);
-            toast.error(
-                'Server connection error. Please ensure the backend is running on port 3001',
-            );
-        } finally {
-            setIsLoading(false);
+            toast.error('Server connection error.');
         }
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-50 flex items-center justify-center p-4 font-sans">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 w-full max-w-md overflow-y-auto max-h-[90vh]">
-                <h1 className="text-2xl font-black text-slate-800 mb-2">
-                    SaaS Setup 🏢
-                </h1>
-                <p className="text-slate-500 text-sm mb-6">
-                    Create your Restaurant and Admin account.
-                </p>
+        <div className="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 font-sans">
+            <div className="bg-white w-full max-w-110 p-8 sm:p-10 rounded-4xl shadow-2xl">
+                <header className="text-center mb-10">
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic">
+                        HACCP Pro
+                    </h1>
+                    <p className="text-slate-500 font-bold text-sm mt-2">
+                        Create your Restaurant & Admin account
+                    </p>
+                </header>
 
-                <form onSubmit={createAccount} className="flex flex-col gap-4">
-                    {/* Tenant (Restaurant) Data Section */}
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl mb-2">
-                        <label className="block text-sm font-bold text-blue-900 mb-1">
+                <form onSubmit={handleRegister} className="space-y-5">
+                    {/* RESTAURANT NAME - HIGHLIGHTED */}
+                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mb-2">
+                        <label className="block text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1.5">
                             Restaurant Name
                         </label>
                         <input
                             name="restaurantName"
                             required
-                            placeholder="Ex: Gordon Ramsay Steakhouse"
-                            className="w-full p-3 border border-blue-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            placeholder="Ex: Caireen Early Years"
+                            className="w-full bg-transparent text-slate-900 font-bold placeholder:text-blue-300 outline-none"
                         />
                     </div>
 
-                    {/* Admin User Data Section */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
-                            Your Full Name
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 px-1">
+                            Full Name
                         </label>
                         <input
-                            name="userName"
+                            name="name"
                             required
-                            placeholder="Ex: Gordon Ramsay"
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ex: William Dias"
+                            className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all outline-none"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
-                            Email
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 px-1">
+                            Email Address
                         </label>
                         <input
                             name="email"
                             type="email"
                             required
                             placeholder="chef@restaurant.com"
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all outline-none"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5 px-1">
                             Password
                         </label>
                         <input
@@ -115,32 +91,29 @@ export default function SetupPage() {
                             type="password"
                             required
                             placeholder="••••••••"
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all outline-none"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">
-                            Role
-                        </label>
-                        <select
-                            name="role"
-                            className="w-full p-3 border border-slate-300 rounded-lg outline-none bg-white"
-                        >
-                            <option value="CHEF">Head Chef</option>
-                            <option value="MANAGER">Manager</option>
-                        </select>
-                    </div>
-
-                    {/* Submit Action */}
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        className="mt-4 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] mt-2"
                     >
-                        {isLoading ? 'Creating Empire...' : 'Create Account'}
+                        Create Account
                     </button>
                 </form>
+
+                <div className="mt-8 text-center">
+                    <p className="text-sm text-slate-500">
+                        Already have an account?{' '}
+                        <Link
+                            href="/login"
+                            className="text-blue-600 font-bold hover:underline"
+                        >
+                            Sign In
+                        </Link>
+                    </p>
+                </div>
             </div>
         </div>
     );
