@@ -14,11 +14,14 @@ export default function SetupPage() {
         const data = Object.fromEntries(formData);
 
         try {
-            const res = await fetch('http://localhost:3001/api/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                },
+            );
 
             if (res.ok) {
                 toast.success('Account created! Please sign in.');

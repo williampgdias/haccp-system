@@ -20,10 +20,10 @@ export default function SettingsPage() {
         try {
             const [resFridges, resAreas] = await Promise.all([
                 fetch(
-                    `http://localhost:3001/api/logs/equipment/${restaurantId}`,
+                    `${process.env.NEXT_PUBLIC_API_URL}/logs/equipment/${restaurantId}`,
                 ),
                 fetch(
-                    `http://localhost:3001/api/logs/cleaning-areas/${restaurantId}`,
+                    `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning-areas/${restaurantId}`,
                 ),
             ]);
             if (resFridges.ok) setFridges(await resFridges.json());
@@ -56,11 +56,14 @@ export default function SettingsPage() {
                 : { name, restaurantId };
 
         try {
-            const res = await fetch(`http://localhost:3001/api/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                },
+            );
 
             if (res.ok) {
                 toast.success(
@@ -84,7 +87,7 @@ export default function SettingsPage() {
             type === 'fridge' ? 'logs/equipment' : 'logs/cleaning-areas';
         try {
             const res = await fetch(
-                `http://localhost:3001/api/${endpoint}/${id}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}/${id}`,
                 {
                     method: 'DELETE',
                 },

@@ -30,7 +30,7 @@ const authOptions: NextAuthOptions = {
                      * Note: The backend route should 'include' the restaurant object.
                      */
                     const res = await fetch(
-                        `http://localhost:3001/api/users/by-email/${credentials.email}`,
+                        `${process.env.NEXT_PUBLIC_API_URL}/users/by-email/${credentials.email}`,
                         { cache: 'no-store' }, // Ensure fresh data on every attempt
                     );
 

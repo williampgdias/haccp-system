@@ -39,7 +39,7 @@ export default function TemperaturesPage() {
         try {
             setIsFetchingLogs(true);
             const res = await fetch(
-                `http://localhost:3001/api/logs/temperatures/${restaurantId}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/temperatures/${restaurantId}`,
             );
             if (res.ok) {
                 const data = await res.json();
@@ -74,7 +74,9 @@ export default function TemperaturesPage() {
     useEffect(() => {
         const restaurantId = (session?.user as any)?.restaurantId;
         if (restaurantId) {
-            fetch(`http://localhost:3001/api/logs/equipment/${restaurantId}`)
+            fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/equipment/${restaurantId}`,
+            )
                 .then((res) => res.json())
                 .then((data) => setEquipments(data));
             fetchLogs(restaurantId);
@@ -91,7 +93,7 @@ export default function TemperaturesPage() {
 
         try {
             const res = await fetch(
-                'http://localhost:3001/api/logs/temperatures',
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/temperatures`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

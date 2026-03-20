@@ -39,7 +39,7 @@ export default function CookingPage() {
         if (!restaurantId) return;
         try {
             const res = await fetch(
-                `http://localhost:3001/api/logs/cooking/${restaurantId}`,
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/cooking/${restaurantId}`,
             );
             if (res.ok) setLogs(await res.json());
         } catch (err) {
@@ -70,11 +70,14 @@ export default function CookingPage() {
         }
 
         try {
-            const res = await fetch('http://localhost:3001/api/logs/cooking', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/cooking`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                },
+            );
             if (res.ok) {
                 toast.success('Cooking record saved!');
                 (e.target as HTMLFormElement).reset();
@@ -95,7 +98,7 @@ export default function CookingPage() {
 
         try {
             const res = await fetch(
-                `http://localhost:3001/api/logs/cooking/${coolingTargetId}/cooling`,
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/cooking/${coolingTargetId}/cooling`,
                 {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },

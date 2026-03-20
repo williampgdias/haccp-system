@@ -43,10 +43,10 @@ export default function CleaningPage() {
             setIsFetchingLogs(true);
             const [resLogs, resAreas] = await Promise.all([
                 fetch(
-                    `http://localhost:3001/api/logs/cleaning/${restaurantId}`,
+                    `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning/${restaurantId}`,
                 ),
                 fetch(
-                    `http://localhost:3001/api/logs/cleaning-areas/${restaurantId}`,
+                    `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning-areas/${restaurantId}`,
                 ),
             ]);
 
@@ -81,18 +81,21 @@ export default function CleaningPage() {
         const selectedAreaObj = areas.find((a) => a.id === selectedAreaId);
 
         try {
-            const res = await fetch('http://localhost:3001/api/logs/cleaning', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    restaurantId,
-                    cleaningAreaId: selectedAreaId, // Essential for Prisma Relation
-                    area: selectedAreaObj?.name, // Display name for history
-                    status: status,
-                    initials: formData.get('initials'),
-                    comments: formData.get('comments') || '',
-                }),
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        restaurantId,
+                        cleaningAreaId: selectedAreaId, // Essential for Prisma Relation
+                        area: selectedAreaObj?.name, // Display name for history
+                        status: status,
+                        initials: formData.get('initials'),
+                        comments: formData.get('comments') || '',
+                    }),
+                },
+            );
 
             if (res.ok) {
                 form.reset();
