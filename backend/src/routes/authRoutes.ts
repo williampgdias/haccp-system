@@ -1,11 +1,12 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import prisma from '../prisma.js';
 
 const router = Router();
 
 /**
  * FETCH USER BY EMAIL
- * Critical for NextAuth to validate user and retrieve their Restaurant ID.
+ * Used by NextAuth to validate existence and retrieve Restaurant ID/Role.
  */
 router.get('/users/by-email/:email', async (req, res) => {
     try {
@@ -16,39 +17,53 @@ router.get('/users/by-email/:email', async (req, res) => {
         });
 
         if (!user) return res.status(404).json({ error: 'User not found' });
+
         res.json(user);
     } catch (error) {
+        console.error('Error fetching user:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 /**
- * SAAS SETUP
- * Creates the Restaurant and the Admin User in a single transaction.
+ * SAAS REGISTRATION (REGISTER)
+ * Renamed from /setup to /register to match Frontend calls.
+ * Creates the Restaurant and the Admin User with a hashed password.
  */
-router.post('/setup', async (req, res) => {
+router.post('/register', async (req, res) => {
     try {
-        const { restaurantName, userName, email, password, role } = req.body;
+        // MUDANÇA AQUI: Trocamos 'userName' por 'name' para bater com o formulário
+        const { restaurantName, name, email, password } = req.body;
+
+        if (!restaurantName || !name || !email || !password) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Email already in use' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const newRestaurant = await prisma.restaurant.create({
             data: {
                 name: restaurantName,
                 users: {
                     create: {
-                        name: userName,
+                        name: name,
                         email: email,
-                        password: password,
-                        role: role,
+                        password: hashedPassword,
+                        role: 'ADMIN',
                     },
                 },
             },
-            include: { users: true },
         });
 
-        res.json(newRestaurant);
+        res.status(201).json({ message: 'Success' });
     } catch (error) {
-        console.error('Setup Error:', error);
-        res.status(500).json({ error: 'Failed to setup restaurant and user' });
+        console.error('Registration Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 

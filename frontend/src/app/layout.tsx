@@ -20,7 +20,7 @@ export default function RootLayout({
                             <main className="flex-1">{children}</main>
                         </div>
                     </div>
-                    <Toaster position="top-right" />
+                    <Toaster position="bottom-right" />
                 </NextAuthProvider>
             </body>
         </html>

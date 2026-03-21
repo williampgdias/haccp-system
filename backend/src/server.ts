@@ -4,6 +4,7 @@ import cors from 'cors';
 
 import authRoutes from './routes/authRoutes.js';
 import logRoutes from './routes/logRoutes.js';
+import teamRoutes from './routes/teamRoutes.js';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -14,8 +15,9 @@ app.use(express.json());
 // ==========================================
 // ROUTES REGISTER
 // ==========================================
-app.use('/api', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/team', teamRoutes);
 
 // ==========================================
 // STARTING THE SERVER
