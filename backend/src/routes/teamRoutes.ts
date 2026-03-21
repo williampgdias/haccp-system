@@ -20,11 +20,9 @@ router.post('/', async (req, res) => {
         const { name, email, restaurantId, role } = req.body;
 
         if (!name || !email || !restaurantId) {
-            return res
-                .status(400)
-                .json({
-                    error: 'Name, email, and restaurant ID are required.',
-                });
+            return res.status(400).json({
+                error: 'Name, email, and restaurant ID are required.',
+            });
         }
 
         // Validate that the role is either ADMIN or STAFF
@@ -73,7 +71,7 @@ router.get('/:restaurantId', async (req, res) => {
     try {
         const logs = await prisma.user.findMany({
             where: { restaurantId: req.params.restaurantId },
-            orderBy: { name: 'asc' }, // Alphabetical order
+            orderBy: { name: 'asc' },
         });
         res.json(logs);
     } catch (error) {
@@ -93,6 +91,31 @@ router.delete('/:id', async (req, res) => {
     } catch (error) {
         console.error('Error deleting team member:', error);
         res.status(500).json({ error: 'Failed to delete team member.' });
+    }
+});
+
+/**
+ * PATCH /:id/role
+ * Updates a user's role (ADMIN <-> STAFF).
+ */
+router.patch('/:id/role', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (role !== 'ADMIN' && role !== 'STAFF') {
+            return res.status(400).json({ error: 'Invalid role' });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id },
+            data: { role },
+        });
+
+        res.json(updatedUser);
+    } catch (error) {
+        console.error('Error updating role:', error);
+        res.status(500).json({ error: 'Failed to update role' });
     }
 });
 

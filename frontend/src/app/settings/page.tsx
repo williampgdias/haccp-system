@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 /**
  * Interface representing a Team Member from the database.
@@ -22,12 +23,19 @@ interface TeamMember {
 
 export default function SettingsPage() {
     const { data: session } = useSession();
+    const router = useRouter();
+
+    // Auth & Tenant Context
+    const userRole = (session?.user as any)?.role;
+    const restaurantId = (session?.user as any)?.restaurantId;
+
+    // Infrastructure States
     const [fridges, setFridges] = useState<any[]>([]);
     const [areas, setAreas] = useState<any[]>([]);
-    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Team Management States
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [staffName, setStaffName] = useState('');
     const [staffEmail, setStaffEmail] = useState('');
     const [staffRole, setStaffRole] = useState('STAFF');
@@ -35,14 +43,21 @@ export default function SettingsPage() {
     const [isFetchingTeam, setIsFetchingTeam] = useState(false);
     const [teamMessage, setTeamMessage] = useState('');
 
-    const restaurantId = (session?.user as any)?.restaurantId;
+    /**
+     * SECURITY: Redirect non-admin users back to dashboard
+     */
+    useEffect(() => {
+        if (session && userRole !== 'ADMIN') {
+            toast.error('Access Denied: Admin privileges required.');
+            router.push('/');
+        }
+    }, [session, userRole, router]);
 
     /**
      * Main data fetcher for the settings page.
-     * Loads Fridges, Cleaning Areas, and Team Members.
      */
     const fetchData = async () => {
-        if (!restaurantId) return;
+        if (!restaurantId || userRole !== 'ADMIN') return;
         setIsFetchingTeam(true);
         try {
             const [resFridges, resAreas, resTeam] = await Promise.all([
@@ -62,7 +77,7 @@ export default function SettingsPage() {
             if (resTeam.ok) setTeamMembers(await resTeam.json());
         } catch (err) {
             console.error('Error fetching settings:', err);
-            toast.error('Failed to load some settings.');
+            toast.error('Failed to load settings.');
         } finally {
             setIsFetchingTeam(false);
         }
@@ -70,7 +85,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         fetchData();
-    }, [restaurantId]);
+    }, [restaurantId, userRole]);
 
     /**
      * Handles adding new Equipment or Cleaning Areas.
@@ -119,18 +134,14 @@ export default function SettingsPage() {
     }
 
     /**
-     * Enhanced Delete Handler with Safety Confirmation
+     * Enhanced Delete Handler for Equipment/Areas
      */
     async function handleDelete(id: string, type: 'fridge' | 'area') {
-        const warningMessage = `Are you sure? \n\nThis action CANNOT be undone. Deleting this ${type === 'fridge' ? 'equipment' : 'cleaning zone'} will permanently REMOVE all associated historical logs and data from the system.`;
-
-        if (!window.confirm(warningMessage)) {
-            return;
-        }
+        const warning = `ARE YOU SURE? \n\nDeleting this ${type} will permanently REMOVE all associated historical logs. This cannot be undone.`;
+        if (!window.confirm(warning)) return;
 
         const endpoint =
             type === 'fridge' ? 'logs/equipment' : 'logs/cleaning-areas';
-
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}/${id}`,
@@ -141,9 +152,6 @@ export default function SettingsPage() {
             if (res.ok) {
                 toast.success('Removed successfully!');
                 await fetchData();
-            } else {
-                const data = await res.json();
-                toast.error(data.error || 'Delete failed');
             }
         } catch (err) {
             toast.error('Connection error');
@@ -151,7 +159,7 @@ export default function SettingsPage() {
     }
 
     /**
-     * TEAM MANAGEMENT: Adds a new staff member to the database.
+     * TEAM: Adds a new staff member.
      */
     const handleAddStaff = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,34 +174,57 @@ export default function SettingsPage() {
                     name: staffName,
                     email: staffEmail,
                     role: staffRole,
-                    restaurantId: restaurantId,
+                    restaurantId,
                 }),
             });
 
-            const data = await res.json();
-
             if (!res.ok) {
+                const data = await res.json();
                 setTeamMessage(`❌ Error: ${data.error}`);
             } else {
                 setTeamMessage('✅ Staff added successfully!');
                 setStaffName('');
                 setStaffEmail('');
                 setStaffRole('STAFF');
-                await fetchData(); // Refresh list
+                await fetchData();
             }
         } catch (error) {
-            setTeamMessage('❌ Failed to connect to the server');
+            setTeamMessage('❌ Connection failed');
         } finally {
             setIsSubmittingTeam(false);
         }
     };
 
     /**
-     * TEAM MANAGEMENT: Removes a staff member.
+     * TEAM: Toggles user role (ADMIN <-> STAFF)
+     */
+    const toggleRole = async (memberId: string, currentRole: string) => {
+        const newRole = currentRole === 'ADMIN' ? 'STAFF' : 'ADMIN';
+
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/team/${memberId}/role`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: newRole }),
+                },
+            );
+
+            if (res.ok) {
+                toast.success('Role updated!');
+                fetchData();
+            }
+        } catch (error) {
+            toast.error('Failed to update role');
+        }
+    };
+
+    /**
+     * TEAM: Removes a staff member.
      */
     const handleDeleteTeamMember = async (id: string) => {
-        if (!confirm('Are you sure you want to remove this team member?'))
-            return;
+        if (!confirm('Permanently remove this team member?')) return;
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/team/${id}`,
@@ -204,13 +235,14 @@ export default function SettingsPage() {
             if (res.ok) {
                 toast.success('Member removed');
                 await fetchData();
-            } else {
-                toast.error('Failed to remove member');
             }
         } catch (error) {
             toast.error('Connection error');
         }
     };
+
+    // If not admin, don't even render the UI
+    if (userRole !== 'ADMIN') return null;
 
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
@@ -224,7 +256,7 @@ export default function SettingsPage() {
             </header>
 
             <div className="space-y-8">
-                {/* FRIDGES SECTION */}
+                {/* COLD STORAGE */}
                 <section>
                     <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         ❄️ Cold Storage
@@ -270,7 +302,7 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* CLEANING AREAS SECTION */}
+                {/* CLEANING ZONES */}
                 <section>
                     <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         ✨ Cleaning Zones
@@ -293,7 +325,7 @@ export default function SettingsPage() {
                                 Add
                             </button>
                         </form>
-                        <div className="divide-y divide-slate-100 py-2">
+                        <div className="divide-y divide-slate-100">
                             {areas.map((a) => (
                                 <div
                                     key={a.id}
@@ -316,7 +348,7 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* TEAM MANAGEMENT SECTION */}
+                {/* TEAM MANAGEMENT */}
                 <section>
                     <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         👨‍🍳 Team Management
@@ -364,11 +396,10 @@ export default function SettingsPage() {
                                 disabled={isSubmittingTeam}
                                 className="px-6 py-2 bg-slate-950 text-white font-semi-bold rounded-lg hover:opacity-90 transition-all shadow-lg active:scale-[0.98] whitespace-nowrap"
                             >
-                                {isSubmittingTeam ? '...' : 'Add'}
+                                Add
                             </button>
                         </form>
 
-                        {/* Registered Team Members List */}
                         <div className="divide-y divide-slate-100">
                             {isFetchingTeam ? (
                                 <p className="text-center p-4 text-xs text-slate-400">
@@ -391,32 +422,45 @@ export default function SettingsPage() {
                                             <span className="text-[10px] text-slate-400 font-medium block mt-0.5">
                                                 {member.email} •{' '}
                                                 <span
-                                                    className={`uppercase tracking-wider ${member.role === 'ADMIN' ? 'text-blue-500 font-black' : 'text-slate-500 font-bold'}`}
+                                                    onClick={() =>
+                                                        toggleRole(
+                                                            member.id,
+                                                            member.role,
+                                                        )
+                                                    }
+                                                    className={`uppercase cursor-pointer hover:opacity-80 transition-all tracking-wider ${
+                                                        member.role === 'ADMIN'
+                                                            ? 'text-blue-500 font-black'
+                                                            : 'text-slate-500 font-bold'
+                                                    }`}
+                                                    title="Click to change role"
                                                 >
-                                                    {member.role}
+                                                    {member.role} 🔄
                                                 </span>
                                             </span>
                                         </div>
-                                        <button
-                                            onClick={() =>
-                                                handleDeleteTeamMember(
-                                                    member.id,
-                                                )
-                                            }
-                                            className="text-[10px] font-bold text-slate-300 hover:text-red-500 uppercase tracking-tighter"
-                                        >
-                                            Remove
-                                        </button>
+                                        {/* Prevents admin from deleting themselves accidentally */}
+                                        {member.email !==
+                                            session?.user?.email && (
+                                            <button
+                                                onClick={() =>
+                                                    handleDeleteTeamMember(
+                                                        member.id,
+                                                    )
+                                                }
+                                                className="text-[10px] font-bold text-slate-300 hover:text-red-500 uppercase tracking-tighter"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             )}
                         </div>
-
-                        {/* Feedback Message */}
                         {teamMessage && (
-                            <div className="p-3 bg-white">
+                            <div className="p-3 bg-white border-t border-slate-50">
                                 <p
-                                    className={`text-xs font-bold uppercase tracking-wide ${teamMessage.includes('Error') || teamMessage.includes('Failed') ? 'text-red-500' : 'text-emerald-500'}`}
+                                    className={`text-xs font-bold uppercase tracking-wide ${teamMessage.includes('Error') ? 'text-red-500' : 'text-emerald-500'}`}
                                 >
                                     {teamMessage}
                                 </p>
