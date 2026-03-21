@@ -15,6 +15,9 @@ export default function Home() {
         cookingToday: 0,
         deliveriesToday: 0,
         cleaningsToday: 0,
+        highTempAlerts: 0,
+        totalEquip: 0,
+        totalStaff: 0,
     });
 
     const [activity, setActivity] = useState({
@@ -31,71 +34,58 @@ export default function Home() {
             if (
                 status !== 'authenticated' ||
                 !(session?.user as any)?.restaurantId
-            ) {
+            )
                 return;
-            }
 
             const restaurantId = (session.user as any).restaurantId;
 
             try {
-                const safeFetch = async (endpoint: string) => {
-                    try {
-                        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-                            cache: 'no-store',
-                        });
-                        if (!res.ok) return [];
-                        const data = await res.json();
-                        return Array.isArray(data) ? data : [];
-                    } catch (e) {
-                        console.error(`Failed fetching ${endpoint}:`, e);
-                        return [];
-                    }
-                };
+                // One single request to get the whole "Kitchen Overview"
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats/${restaurantId}`,
+                );
 
-                const [temps, cooking, deliveries, cleanings] =
-                    await Promise.all([
-                        safeFetch(`/logs/temperatures/${restaurantId}`),
-                        safeFetch(`/logs/cooking/${restaurantId}`),
-                        safeFetch(`/logs/delivery/${restaurantId}`),
-                        safeFetch(`/logs/cleaning/${restaurantId}`),
-                    ]);
+                if (!res.ok) throw new Error('Failed to fetch');
+
+                const data = await res.json(); // This is the { temps, cooking, deliveries, cleanings } object
 
                 const todayStr = new Date().toLocaleDateString();
 
                 setStats({
-                    tempsToday: temps.filter(
+                    tempsToday: data.temps.filter(
                         (t: any) =>
                             new Date(t.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
-                    cookingToday: cooking.filter(
+                    cookingToday: data.cooking.filter(
                         (c: any) =>
                             new Date(c.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
-                    deliveriesToday: deliveries.filter(
+                    deliveriesToday: data.deliveries.filter(
                         (d: any) =>
                             new Date(d.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
-                    cleaningsToday: cleanings.filter(
+                    cleaningsToday: data.cleanings.filter(
                         (c: any) =>
                             new Date(c.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
+
+                    highTempAlerts: data.temps.filter(
+                        (t: any) =>
+                            new Date(t.createdAt).toLocaleDateString() ===
+                                todayStr && t.temperature > 8,
+                    ).length,
+                    totalEquip: data.totalEquip,
+                    totalStaff: data.totalUsers,
                 });
 
-                const processAndGroup = (data: any[]) => {
-                    if (!data || data.length === 0) return {};
-
-                    const sorted = data.sort(
-                        (a, b) =>
-                            new Date(b.createdAt).getTime() -
-                            new Date(a.createdAt).getTime(),
-                    );
-                    const limited = sorted.slice(0, 10);
-
-                    return limited.reduce(
+                // 2. Process and Group Activity
+                const processAndGroup = (items: any[]) => {
+                    if (!items || items.length === 0) return {};
+                    return items.reduce(
                         (acc: Record<string, any[]>, item: any) => {
                             const dateStr = new Date(
                                 item.createdAt,
@@ -109,10 +99,10 @@ export default function Home() {
                 };
 
                 setActivity({
-                    temps: processAndGroup(temps),
-                    cooking: processAndGroup(cooking),
-                    deliveries: processAndGroup(deliveries),
-                    cleanings: processAndGroup(cleanings),
+                    temps: processAndGroup(data.temps),
+                    cooking: processAndGroup(data.cooking),
+                    deliveries: processAndGroup(data.deliveries),
+                    cleanings: processAndGroup(data.cleanings),
                 });
             } catch (error) {
                 console.error('Failed to load dashboard data', error);
@@ -249,6 +239,58 @@ export default function Home() {
                             </span>
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* SECONDARY STATS GRID - THE "INFRASTRUCTURE" ROW */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10">
+                {/* HIGH TEMP ALERTS - DANGER CARD */}
+                <div
+                    className={`p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border ${stats.highTempAlerts > 0 ? 'bg-red-50 border-red-200 animate-pulse' : 'bg-white border-slate-200'}`}
+                >
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        High Temp Alerts ⚠️
+                    </h3>
+                    <div className="flex items-end gap-2">
+                        <p
+                            className={`text-2xl sm:text-3xl font-black leading-none ${stats.highTempAlerts > 0 ? 'text-red-600' : 'text-slate-800'}`}
+                        >
+                            {stats.highTempAlerts}
+                        </p>
+                        <span className="text-[10px] font-bold mb-1 block text-slate-400">
+                            Critical
+                        </span>
+                    </div>
+                </div>
+
+                {/* TOTAL INFRASTRUCTURE */}
+                <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        Total Equipment ❄️
+                    </h3>
+                    <div className="flex items-end gap-2">
+                        <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
+                            {stats.totalEquip}
+                        </p>
+                        <span className="text-slate-400 text-[10px] font-bold mb-1 block">
+                            Units
+                        </span>
+                    </div>
+                </div>
+
+                {/* TOTAL STAFF */}
+                <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                    <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
+                        Active Team 👨‍🍳
+                    </h3>
+                    <div className="flex items-end gap-2">
+                        <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
+                            {stats.totalStaff}
+                        </p>
+                        <span className="text-slate-400 text-[10px] font-bold mb-1 block">
+                            Members
+                        </span>
+                    </div>
                 </div>
             </div>
 
