@@ -1,7 +1,6 @@
-import NextAuth from 'next-auth';
-import { NextAuthOptions } from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs'; // 1. Importamos o bcrypt
+import bcrypt from 'bcryptjs';
 
 const authOptions: NextAuthOptions = {
     providers: [
@@ -32,7 +31,7 @@ const authOptions: NextAuthOptions = {
                     );
 
                     if (!isPasswordCorrect) {
-                        console.warn(' [AUTH] Password mismatch');
+                        console.warn('[AUTH] Password mismatch');
                         return null;
                     }
 
@@ -45,7 +44,7 @@ const authOptions: NextAuthOptions = {
                         role: user.role,
                     };
                 } catch (error) {
-                    console.error(' [AUTH] Connection Error:', error);
+                    console.error('[AUTH] Connection Error:', error);
                     return null;
                 }
             },

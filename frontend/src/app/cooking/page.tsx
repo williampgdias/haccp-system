@@ -131,95 +131,147 @@ export default function CookingPage() {
                 </p>
             </header>
 
-            <form
-                onSubmit={saveCookingLog}
-                className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
-            >
-                <div>
-                    <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                        Process
-                    </label>
-                    <div className="flex gap-3 sm:gap-4">
-                        <button
-                            type="button"
-                            onClick={() => setProcessType('Cooking')}
-                            className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
-                                ${processType === 'Cooking' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
-                        >
-                            🔥 COOKING
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setProcessType('Reheating')}
-                            className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
-                                ${processType === 'Reheating' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
-                        >
-                            ♨️ REHEATING
-                        </button>
-                    </div>
-                </div>
-
-                <div className="space-y-1">
-                    <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                        Food Item
-                    </label>
-                    <input
-                        name="foodItem"
-                        required
-                        placeholder="Ex: Roast Chicken"
-                        className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
-                    />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                            Core Temp
-                        </label>
-                        <input
-                            name="coreTemp"
-                            type="number"
-                            step="0.1"
-                            required
-                            placeholder="75.0"
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                            Time
-                        </label>
-                        <input
-                            name="timeChecked"
-                            type="time"
-                            required
-                            defaultValue={new Date()
-                                .toTimeString()
-                                .substring(0, 5)}
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                            Initials
-                        </label>
-                        <input
-                            name="initials"
-                            required
-                            defaultValue={getInitials(session?.user?.name)}
-                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
-                        />
-                    </div>
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
+            {coolingTargetId ? (
+                <form
+                    onSubmit={saveCoolingUpdate}
+                    className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
                 >
-                    Save Cooking Log
-                </button>
-            </form>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                                Cooling Finish Time
+                            </label>
+                            <input
+                                name="coolingFinishTime"
+                                type="time"
+                                required
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                                Cooling Finish Temp
+                            </label>
+                            <input
+                                name="coolingFinishTemp"
+                                type="number"
+                                step="0.1"
+                                required
+                                placeholder="5"
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="submit"
+                            className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
+                        >
+                            Save Cooling Log
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setCoolingTargetId(null)}
+                            className="w-full bg-slate-100 font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            ) : (
+                <form
+                    onSubmit={saveCookingLog}
+                    className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
+                >
+                    <div>
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                            Process
+                        </label>
+                        <div className="flex gap-3 sm:gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setProcessType('Cooking')}
+                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                ${processType === 'Cooking' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                            >
+                                🔥 COOKING
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setProcessType('Reheating')}
+                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                ${processType === 'Reheating' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
+                            >
+                                ♨️ REHEATING
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                            Food Item
+                        </label>
+                        <input
+                            name="foodItem"
+                            required
+                            placeholder="Ex: Roast Chicken"
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                                Core Temp
+                            </label>
+                            <input
+                                name="coreTemp"
+                                type="number"
+                                step="0.1"
+                                required
+                                placeholder="75.0"
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                                Time
+                            </label>
+                            <input
+                                name="timeChecked"
+                                type="time"
+                                required
+                                defaultValue={new Date()
+                                    .toTimeString()
+                                    .substring(0, 5)}
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                                Initials
+                            </label>
+                            <input
+                                name="initials"
+                                required
+                                defaultValue={getInitials(session?.user?.name)}
+                                className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
+                    >
+                        Save Cooking Log
+                    </button>
+                </form>
+            )}
 
             <div className="space-y-4">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">
