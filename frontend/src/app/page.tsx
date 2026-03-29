@@ -1,13 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../services/api';
 import { useSession } from 'next-auth/react';
+import type {
+    TempLog,
+    CookingLog,
+    DeliveryLog,
+    CleaningLog,
+    AnyLog,
+} from '../types/dashboard';
+
+import TemperaturesCard from '@/components/dashboard/TemperaturesCard';
+import CookingCard from '@/components/dashboard/CookingCard';
+import DeliveryCard from '@/components/dashboard/DeliveryCard';
+import CleaningCard from '@/components/dashboard/CleaningCard';
 
 export default function Home() {
     const { data: session, status } = useSession();
-    const [isMounted, setIsMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     const [stats, setStats] = useState({
@@ -21,15 +30,13 @@ export default function Home() {
     });
 
     const [activity, setActivity] = useState({
-        temps: {} as Record<string, any[]>,
-        cooking: {} as Record<string, any[]>,
-        deliveries: {} as Record<string, any[]>,
-        cleanings: {} as Record<string, any[]>,
+        temps: {} as Record<string, TempLog[]>,
+        cooking: {} as Record<string, CookingLog[]>,
+        deliveries: {} as Record<string, DeliveryLog[]>,
+        cleanings: {} as Record<string, CleaningLog[]>,
     });
 
     useEffect(() => {
-        setIsMounted(true);
-
         const fetchDashboardData = async () => {
             if (
                 status !== 'authenticated' ||
@@ -53,28 +60,28 @@ export default function Home() {
 
                 setStats({
                     tempsToday: data.temps.filter(
-                        (t: any) =>
+                        (t: TempLog) =>
                             new Date(t.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
                     cookingToday: data.cooking.filter(
-                        (c: any) =>
+                        (c: CookingLog) =>
                             new Date(c.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
                     deliveriesToday: data.deliveries.filter(
-                        (d: any) =>
+                        (d: DeliveryLog) =>
                             new Date(d.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
                     cleaningsToday: data.cleanings.filter(
-                        (c: any) =>
+                        (c: CleaningLog) =>
                             new Date(c.createdAt).toLocaleDateString() ===
                             todayStr,
                     ).length,
 
                     highTempAlerts: data.temps.filter(
-                        (t: any) =>
+                        (t: TempLog) =>
                             new Date(t.createdAt).toLocaleDateString() ===
                                 todayStr && t.temperature > 8,
                     ).length,
@@ -83,10 +90,16 @@ export default function Home() {
                 });
 
                 // 2. Process and Group Activity
-                const processAndGroup = (items: any[]) => {
+                const processAndGroup = (
+                    items:
+                        | TempLog[]
+                        | CookingLog[]
+                        | DeliveryLog[]
+                        | CleaningLog[],
+                ) => {
                     if (!items || items.length === 0) return {};
                     return items.reduce(
-                        (acc: Record<string, any[]>, item: any) => {
+                        (acc: Record<string, AnyLog[]>, item: AnyLog) => {
                             const dateStr = new Date(
                                 item.createdAt,
                             ).toLocaleDateString();
@@ -99,10 +112,22 @@ export default function Home() {
                 };
 
                 setActivity({
-                    temps: processAndGroup(data.temps),
-                    cooking: processAndGroup(data.cooking),
-                    deliveries: processAndGroup(data.deliveries),
-                    cleanings: processAndGroup(data.cleanings),
+                    temps: processAndGroup(data.temps) as Record<
+                        string,
+                        TempLog[]
+                    >,
+                    cooking: processAndGroup(data.cooking) as Record<
+                        string,
+                        CookingLog[]
+                    >,
+                    deliveries: processAndGroup(data.deliveries) as Record<
+                        string,
+                        DeliveryLog[]
+                    >,
+                    cleanings: processAndGroup(data.cleanings) as Record<
+                        string,
+                        CleaningLog[]
+                    >,
                 });
             } catch (error) {
                 console.error('Failed to load dashboard data', error);
@@ -114,7 +139,7 @@ export default function Home() {
         fetchDashboardData();
     }, [session, status]);
 
-    if (!isMounted || status === 'loading') {
+    if (status === 'loading') {
         return (
             <div className="flex items-center justify-center h-screen">
                 <p className="text-slate-400 font-bold animate-pulse text-sm sm:text-base">
@@ -123,34 +148,6 @@ export default function Home() {
             </div>
         );
     }
-
-    const renderDateHeader = (dateStr: string) => {
-        const todayStr = new Date().toLocaleDateString();
-        return (
-            <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3 mt-4 first:mt-0">
-                📅 {dateStr === todayStr ? 'Today' : dateStr}
-            </h4>
-        );
-    };
-
-    // Helper function to force 12h display for "HH:mm" strings
-    const formatTimeStr12h = (time24: string) => {
-        if (!time24) return '';
-        const [h, m] = time24.split(':');
-        const hours = parseInt(h, 10);
-        const suffix = hours >= 12 ? 'PM' : 'AM';
-        const hours12 = hours % 12 || 12;
-        return `${hours12}:${m} ${suffix}`;
-    };
-
-    // Helper for ISO Date objects
-    const formatIsoTo12h = (isoString: string) => {
-        return new Date(isoString).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        });
-    };
 
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-8 font-sans">
@@ -296,279 +293,28 @@ export default function Home() {
 
             {/* ACTIVITY CARDS GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {/* --- TEMPERATURES CARD --- */}
-                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                        🌡️ Recent Temperatures
-                    </h3>
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        {isLoading ? (
-                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
-                                Loading...
-                            </p>
-                        ) : Object.keys(activity.temps).length === 0 ? (
-                            <p className="text-slate-400 text-xs sm:text-sm">
-                                No records found.
-                            </p>
-                        ) : (
-                            Object.entries(activity.temps).map(
-                                ([date, items]) => (
-                                    <div key={date}>
-                                        {renderDateHeader(date)}
-                                        <div className="space-y-2 sm:space-y-3">
-                                            {items.map((item) => (
-                                                <div
-                                                    key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
-                                                >
-                                                    <div>
-                                                        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
-                                                            <p className="font-bold text-slate-700 text-sm">
-                                                                {item.equipment
-                                                                    ?.name ||
-                                                                    'Equipment'}
-                                                            </p>
-                                                            <span
-                                                                className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${item.timeChecked === 'Afternoon' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}
-                                                            >
-                                                                {item.timeChecked ||
-                                                                    'Morning'}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                                                            By{' '}
-                                                            <span className="font-bold text-slate-500">
-                                                                {item.initials}
-                                                            </span>{' '}
-                                                            •{' '}
-                                                            {formatIsoTo12h(
-                                                                item.createdAt,
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm ${item.temperature > 8 ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}
-                                                    >
-                                                        {item.temperature}°C
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ),
-                            )
-                        )}
-                    </div>
-                </div>
-
+                {/* TEMPERATURES CARD */}
+                <TemperaturesCard
+                    isLoading={isLoading}
+                    activity={activity.temps}
+                />
                 {/* --- COOKING CARD --- */}
-                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                        👨‍🍳 Cooking & Cooling
-                    </h3>
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        {isLoading ? (
-                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
-                                Loading...
-                            </p>
-                        ) : Object.keys(activity.cooking).length === 0 ? (
-                            <p className="text-slate-400 text-xs sm:text-sm">
-                                No records found.
-                            </p>
-                        ) : (
-                            Object.entries(activity.cooking).map(
-                                ([date, items]) => (
-                                    <div key={date}>
-                                        {renderDateHeader(date)}
-                                        <div className="space-y-2 sm:space-y-3">
-                                            {items.map((item) => {
-                                                const isCooking =
-                                                    !!item.cookTemp;
-                                                const temp = isCooking
-                                                    ? item.cookTemp
-                                                    : item.reheatTemp;
-                                                const time = isCooking
-                                                    ? item.cookTime
-                                                    : item.reheatTime;
-                                                const isSafe = temp >= 75;
-
-                                                return (
-                                                    <div
-                                                        key={item.id}
-                                                        className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
-                                                    >
-                                                        <div>
-                                                            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
-                                                                <p className="font-bold text-slate-700 text-sm">
-                                                                    {
-                                                                        item.foodItem
-                                                                    }
-                                                                </p>
-                                                                <span
-                                                                    className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${isCooking ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}
-                                                                >
-                                                                    {isCooking
-                                                                        ? 'Cooking'
-                                                                        : 'Reheating'}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                                                                By{' '}
-                                                                <span className="font-bold text-slate-500">
-                                                                    {
-                                                                        item.initials
-                                                                    }
-                                                                </span>{' '}
-                                                                •{' '}
-                                                                {formatTimeStr12h(
-                                                                    time,
-                                                                )}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <span
-                                                                className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${isSafe ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}
-                                                            >
-                                                                {temp}°C
-                                                            </span>
-                                                            {item.coolingFinishTime && (
-                                                                <span className="text-[8px] sm:text-[9px] font-bold text-blue-500 uppercase flex items-center gap-1 mt-0.5">
-                                                                    Cooled ❄️
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ),
-                            )
-                        )}
-                    </div>
-                </div>
+                <CookingCard
+                    isLoading={isLoading}
+                    activity={activity.cooking}
+                />
 
                 {/* --- DELIVERIES CARD --- */}
-                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                        📦 Recent Deliveries
-                    </h3>
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        {isLoading ? (
-                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
-                                Loading...
-                            </p>
-                        ) : Object.keys(activity.deliveries).length === 0 ? (
-                            <p className="text-slate-400 text-xs sm:text-sm">
-                                No records found.
-                            </p>
-                        ) : (
-                            Object.entries(activity.deliveries).map(
-                                ([date, items]) => (
-                                    <div key={date}>
-                                        {renderDateHeader(date)}
-                                        <div className="space-y-2 sm:space-y-3">
-                                            {items.map((item) => (
-                                                <div
-                                                    key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
-                                                >
-                                                    <div>
-                                                        <p className="font-bold text-slate-700 text-sm">
-                                                            {item.supplier}
-                                                        </p>
-                                                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">
-                                                            Inv:{' '}
-                                                            <span className="font-bold text-slate-500">
-                                                                {item.invoiceNumber ||
-                                                                    'N/A'}
-                                                            </span>{' '}
-                                                            •{' '}
-                                                            {formatIsoTo12h(
-                                                                item.createdAt,
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${
-                                                            parseFloat(
-                                                                item.temperature,
-                                                            ) <= 5
-                                                                ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                                                                : 'bg-red-100 text-res-700 border-red-200'
-                                                        }`}
-                                                    >
-                                                        {parseFloat(
-                                                            item.temperature,
-                                                        ) <= 5
-                                                            ? 'Accepted'
-                                                            : 'Rejected'}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ),
-                            )
-                        )}
-                    </div>
-                </div>
+                <DeliveryCard
+                    isLoading={isLoading}
+                    activity={activity.deliveries}
+                />
 
                 {/* --- CLEANING CARD --- */}
-                <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                        ✨ Cleaning Tasks
-                    </h3>
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                        {isLoading ? (
-                            <p className="text-slate-400 text-xs sm:text-sm animate-pulse">
-                                Loading...
-                            </p>
-                        ) : Object.keys(activity.cleanings).length === 0 ? (
-                            <p className="text-slate-400 text-xs sm:text-sm">
-                                No records found.
-                            </p>
-                        ) : (
-                            Object.entries(activity.cleanings).map(
-                                ([date, items]) => (
-                                    <div key={date}>
-                                        {renderDateHeader(date)}
-                                        <div className="space-y-2 sm:space-y-3">
-                                            {items.map((item) => (
-                                                <div
-                                                    key={item.id}
-                                                    className="flex justify-between items-center bg-slate-50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 hover:shadow-sm transition-shadow"
-                                                >
-                                                    <div>
-                                                        <p className="font-bold text-slate-700 text-sm">
-                                                            {item.area}
-                                                        </p>
-                                                        <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">
-                                                            By{' '}
-                                                            <span className="font-bold text-slate-500">
-                                                                {item.initials}
-                                                            </span>{' '}
-                                                            •{' '}
-                                                            {formatIsoTo12h(
-                                                                item.createdAt,
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        className={`px-2 sm:px-2.5 py-1 rounded-md text-xs sm:text-sm font-black shadow-sm border ${item.status === 'CLEAN' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}
-                                                    >
-                                                        {item.status}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ),
-                            )
-                        )}
-                    </div>
-                </div>
+                <CleaningCard
+                    isLoading={isLoading}
+                    activity={activity.cleanings}
+                />
             </div>
         </div>
     );
