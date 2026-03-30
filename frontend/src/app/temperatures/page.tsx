@@ -102,7 +102,7 @@ export default function TemperaturesPage() {
                         equipmentId: formData.get('equipmentId'),
                         temperature: formData.get('temperature'),
                         initials: formData.get('initials'),
-                        timeChecked: formData.get('timeChecked'), // Will get value from Hidden Input
+                        timeChecked: formData.get('timeChecked'),
                     }),
                 },
             );
@@ -125,7 +125,7 @@ export default function TemperaturesPage() {
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight italic">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                     Daily Temperatures 🌡️
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
@@ -224,7 +224,7 @@ export default function TemperaturesPage() {
 
             {/* OVERVIEW SECTION - UNTOUCHED */}
             <div>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">
+                <h3 className="text-lg font-bold text-slate-800 px-1">
                     Today&apos;s Overview
                 </h3>
 

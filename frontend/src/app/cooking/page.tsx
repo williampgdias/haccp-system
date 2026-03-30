@@ -302,8 +302,8 @@ export default function CookingPage() {
                                                 : 'REHEATING'}
                                         </span>
                                     </div>
-                                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
-                                        BY {log.initials} •{' '}
+                                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                        By {log.initials} •{' '}
                                         {format12h(
                                             isCooking
                                                 ? log.cookTime

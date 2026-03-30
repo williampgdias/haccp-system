@@ -231,11 +231,11 @@ export default function DeliveriesPage() {
                                         {log.category.toUpperCase()}
                                     </span>
                                 </div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
                                     {log.supplier} • {log.invoiceNumber}
                                 </p>
-                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest pt-1">
-                                    BY {log.initials} •{' '}
+                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                    By {log.initials} •{' '}
                                     {formatIsoTo12h(log.createdAt)}
                                 </p>
                             </div>
