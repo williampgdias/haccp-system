@@ -277,6 +277,7 @@ export default function CookingPage() {
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">
                     Active Flow
                 </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {logs.slice(0, 10).map((log) => {
                     const isCooking = !!log.cookTemp;
                     const temp = isCooking ? log.cookTemp : log.reheatTemp;
@@ -302,7 +303,7 @@ export default function CookingPage() {
                                                 : 'REHEATING'}
                                         </span>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
                                         By {log.initials} •{' '}
                                         {format12h(
                                             isCooking
@@ -343,6 +344,7 @@ export default function CookingPage() {
                         </div>
                     );
                 })}
+                </div>
             </div>
         </div>
     );

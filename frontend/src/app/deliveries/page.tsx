@@ -209,44 +209,51 @@ export default function DeliveriesPage() {
                 </button>
             </form>
 
-            <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">
+            <div>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 mb-4">
                     Recent History
                 </h3>
-                {logs.map((log) => {
-                    const isSafe = log.temperature <= 5;
-                    return (
-                        <div
-                            key={log.id}
-                            className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center group hover:border-blue-200 transition-all"
-                        >
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-black text-slate-800">
-                                        {log.productName}
-                                    </span>
-                                    <span
-                                        className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${log.category === 'Meat' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}
-                                    >
-                                        {log.category.toUpperCase()}
-                                    </span>
-                                </div>
-                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                                    {log.supplier} • {log.invoiceNumber}
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
-                                    By {log.initials} •{' '}
-                                    {formatIsoTo12h(log.createdAt)}
-                                </p>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    {logs.map((log) => {
+                        const isSafe = log.temperature <= 5;
+                        return (
                             <div
-                                className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                key={log.id}
+                                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center group hover:border-blue-200 transition-all"
                             >
-                                {log.temperature.toFixed(1)}°C
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-black text-slate-800">
+                                            {log.productName}
+                                        </span>
+                                        <span
+                                            className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${log.category === 'Meat' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}
+                                        >
+                                            {log.category.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                                        {log.supplier} • {log.invoiceNumber}
+                                    </p>
+                                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
+                                        By {log.initials} •{' '}
+                                        {formatIsoTo12h(log.createdAt)}
+                                    </p>
+                                    {log.comments && (
+                                        <div className="text-[10px] border-l-2 border-slate-300 pl-2 text-slate-500 italic font-medium tracking-wider">
+                                            💬 {log.comments}
+                                        </div>
+                                    )}
+                                </div>
+                                <div
+                                    className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                >
+                                    {log.temperature.toFixed(1)}°C
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

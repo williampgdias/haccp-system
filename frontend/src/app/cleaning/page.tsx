@@ -231,7 +231,7 @@ export default function CleaningPage() {
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         {logs.slice(0, 10).map((log) => (
                             <div
                                 key={log.id}
@@ -248,7 +248,7 @@ export default function CleaningPage() {
                                             {log.status}
                                         </span>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
                                         By {log.initials} •{' '}
                                         {formatIsoTo12h(log.createdAt)}
                                     </p>
