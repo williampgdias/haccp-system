@@ -1,6 +1,7 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const authOptions: NextAuthOptions = {
     providers: [
@@ -65,6 +66,23 @@ const authOptions: NextAuthOptions = {
                 session.user.restaurantName = token.restaurantName;
                 session.user.role = token.role;
             }
+
+            // Generate a JWT that the backend can verify
+            // This is the token sent in Authorization header
+            const secret = process.env.NEXTAUTH_SECRET;
+            if (secret) {
+                session.accessToken = jwt.sign(
+                    {
+                        sub: token.sub,
+                        email: token.email,
+                        restaurantId: token.restaurantId,
+                        role: token.role,
+                    },
+                    secret,
+                    { expiresIn: '8h' },
+                );
+            }
+
             return session;
         },
     },
