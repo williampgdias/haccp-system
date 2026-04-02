@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/services/api';
+import ExportPDF from '@/components/ui/ExportPDF';
 
 export default function TemperaturesPage() {
     const { data: session } = useSession();
@@ -38,9 +40,7 @@ export default function TemperaturesPage() {
     const fetchLogs = useCallback(async (restaurantId: string) => {
         try {
             setIsFetchingLogs(true);
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/temperatures/${restaurantId}`,
-            );
+            const res = await apiFetch(`/logs/temperatures/${restaurantId}`);
             if (res.ok) {
                 const data = await res.json();
                 const todayStr = new Date().toLocaleDateString();
@@ -74,9 +74,7 @@ export default function TemperaturesPage() {
     useEffect(() => {
         const restaurantId = (session?.user as any)?.restaurantId;
         if (restaurantId) {
-            fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/equipment/${restaurantId}`,
-            )
+            apiFetch(`/logs/equipment/${restaurantId}`)
                 .then((res) => res.json())
                 .then((data) => setEquipments(data));
             fetchLogs(restaurantId);
@@ -92,20 +90,16 @@ export default function TemperaturesPage() {
         const restaurantId = (session?.user as any)?.restaurantId;
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/temperatures`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        restaurantId,
-                        equipmentId: formData.get('equipmentId'),
-                        temperature: formData.get('temperature'),
-                        initials: formData.get('initials'),
-                        timeChecked: formData.get('timeChecked'),
-                    }),
-                },
-            );
+            const res = await apiFetch(`/logs/temperatures`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    restaurantId,
+                    equipmentId: formData.get('equipmentId'),
+                    temperature: formData.get('temperature'),
+                    initials: formData.get('initials'),
+                    timeChecked: formData.get('timeChecked'),
+                }),
+            });
 
             if (res.ok) {
                 form.reset();
@@ -124,14 +118,18 @@ export default function TemperaturesPage() {
 
     return (
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
-            <header className="mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                    Daily Temperatures 🌡️
-                </h2>
-                <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
-                    Record your morning and afternoon checks.
-                </p>
+            <header className="mb-2 sm:mb-4 flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                        Daily Temperatures 🌡️
+                    </h2>
+                    <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
+                        Record your morning and afternoon checks.
+                    </p>
+                </div>
             </header>
+
+            <ExportPDF reportType="temperatures" />
 
             <form
                 onSubmit={saveTemperature}

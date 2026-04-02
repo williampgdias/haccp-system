@@ -4,6 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/services/api';
+import ExportPDF from '@/components/ui/ExportPDF';
 
 export default function DeliveriesPage() {
     const { data: session } = useSession();
@@ -35,9 +37,7 @@ export default function DeliveriesPage() {
         if (!restaurantId) return;
         try {
             setIsFetching(true);
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/delivery/${restaurantId}`,
-            );
+            const res = await apiFetch(`/logs/delivery/${restaurantId}`);
             if (res.ok) setLogs(await res.json());
         } catch (err) {
             console.error(err);
@@ -56,27 +56,23 @@ export default function DeliveriesPage() {
         const formData = new FormData(e.currentTarget);
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/delivery`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        restaurantId,
-                        category,
-                        productName: formData.get('productName'),
-                        supplier: formData.get('supplier'),
-                        invoiceNumber: formData.get('invoiceNumber'),
-                        temperature: parseFloat(
-                            formData.get('temperature') as string,
-                        ),
-                        initials: (
-                            formData.get('initials') as string
-                        ).toUpperCase(),
-                        comments: formData.get('comments') || '',
-                    }),
-                },
-            );
+            const res = await apiFetch(`/logs/delivery`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    restaurantId,
+                    category,
+                    productName: formData.get('productName'),
+                    supplier: formData.get('supplier'),
+                    invoiceNumber: formData.get('invoiceNumber'),
+                    temperature: parseFloat(
+                        formData.get('temperature') as string,
+                    ),
+                    initials: (
+                        formData.get('initials') as string
+                    ).toUpperCase(),
+                    comments: formData.get('comments') || '',
+                }),
+            });
 
             if (res.ok) {
                 toast.success('Delivery recorded!');
@@ -100,6 +96,8 @@ export default function DeliveriesPage() {
                     High-risk goods traceability.
                 </p>
             </header>
+
+            <ExportPDF reportType="deliveries" />
 
             <form
                 onSubmit={handleSubmit}

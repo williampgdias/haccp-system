@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/services/api';
 
 export default function SetupPage() {
     const router = useRouter();
@@ -14,14 +15,10 @@ export default function SetupPage() {
         const data = Object.fromEntries(formData);
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                },
-            );
+            const res = await apiFetch(`/auth/register`, {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
 
             if (res.ok) {
                 toast.success('Account created! Please sign in.');

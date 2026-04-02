@@ -5,6 +5,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/services/api';
+import ExportPDF from '@/components/ui/ExportPDF';
 
 export default function CookingPage() {
     const { data: session } = useSession();
@@ -38,9 +40,7 @@ export default function CookingPage() {
     const fetchLogs = useCallback(async () => {
         if (!restaurantId) return;
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/cooking/${restaurantId}`,
-            );
+            const res = await apiFetch(`/logs/cooking/${restaurantId}`);
             if (res.ok) setLogs(await res.json());
         } catch (err) {
             console.error(err);
@@ -70,14 +70,11 @@ export default function CookingPage() {
         }
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/cooking`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                },
-            );
+            const res = await apiFetch(`/logs/cooking`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
             if (res.ok) {
                 toast.success('Cooking record saved!');
                 (e.target as HTMLFormElement).reset();
@@ -97,11 +94,10 @@ export default function CookingPage() {
         const formData = new FormData(e.currentTarget);
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/cooking/${coolingTargetId}/cooling`,
+            const res = await apiFetch(
+                `/logs/cooking/${coolingTargetId}/cooling`,
                 {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         coolingFinishTime: formData.get('coolingFinishTime'),
                         coolingFinishTemp: formData.get('coolingFinishTemp'),
@@ -130,6 +126,8 @@ export default function CookingPage() {
                     Critical temperature control.
                 </p>
             </header>
+
+            <ExportPDF reportType="cooking" />
 
             {coolingTargetId ? (
                 <form
@@ -278,72 +276,73 @@ export default function CookingPage() {
                     Active Flow
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                {logs.slice(0, 10).map((log) => {
-                    const isCooking = !!log.cookTemp;
-                    const temp = isCooking ? log.cookTemp : log.reheatTemp;
-                    const isSafe = temp >= 75;
-                    const isCoolingPending = !log.coolingFinishTime;
+                    {logs.slice(0, 10).map((log) => {
+                        const isCooking = !!log.cookTemp;
+                        const temp = isCooking ? log.cookTemp : log.reheatTemp;
+                        const isSafe = temp >= 75;
+                        const isCoolingPending = !log.coolingFinishTime;
 
-                    return (
-                        <div
-                            key={log.id}
-                            className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-orange-200"
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-black text-slate-800">
-                                            {log.foodItem}
-                                        </span>
-                                        <span
-                                            className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${isCooking ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-red-50 text-red-600 border-red-100'}`}
-                                        >
-                                            {isCooking
-                                                ? 'COOKING'
-                                                : 'REHEATING'}
-                                        </span>
-                                    </div>
-                                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
-                                        By {log.initials} •{' '}
-                                        {format12h(
-                                            isCooking
-                                                ? log.cookTime
-                                                : log.reheatTime,
-                                        )}
-                                    </p>
-                                </div>
-                                <div
-                                    className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
-                                >
-                                    {temp}°C
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-50">
-                                {isCoolingPending ? (
-                                    <div className="flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-100">
-                                        <p className="text-[10px] font-black text-blue-700 uppercase tracking-tight">
-                                            Cooling Process Required
+                        return (
+                            <div
+                                key={log.id}
+                                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-orange-200"
+                            >
+                                <div className="flex justify-between items-center mb-4">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-black text-slate-800">
+                                                {log.foodItem}
+                                            </span>
+                                            <span
+                                                className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${isCooking ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                            >
+                                                {isCooking
+                                                    ? 'COOKING'
+                                                    : 'REHEATING'}
+                                            </span>
+                                        </div>
+                                        <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
+                                            By {log.initials} •{' '}
+                                            {format12h(
+                                                isCooking
+                                                    ? log.cookTime
+                                                    : log.reheatTime,
+                                            )}
                                         </p>
-                                        <button
-                                            onClick={() =>
-                                                setCoolingTargetId(log.id)
-                                            }
-                                            className="bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-lg shadow-md"
-                                        >
-                                            RECORD COOLING
-                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="flex items-center gap-2 text-[10px] font-black text-blue-700 bg-blue-50 px-3 py-2 rounded-xl border border-blue-100">
-                                        ❄️ COOLED TO {log.coolingFinishTemp}°C
-                                        AT {format12h(log.coolingFinishTime)}
+                                    <div
+                                        className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                    >
+                                        {temp}°C
                                     </div>
-                                )}
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-50">
+                                    {isCoolingPending ? (
+                                        <div className="flex justify-between items-center bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                            <p className="text-[10px] font-black text-blue-700 uppercase tracking-tight">
+                                                Cooling Process Required
+                                            </p>
+                                            <button
+                                                onClick={() =>
+                                                    setCoolingTargetId(log.id)
+                                                }
+                                                className="bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-lg shadow-md"
+                                            >
+                                                RECORD COOLING
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-blue-700 bg-blue-50 px-3 py-2 rounded-xl border border-blue-100">
+                                            ❄️ COOLED TO {log.coolingFinishTemp}
+                                            °C AT{' '}
+                                            {format12h(log.coolingFinishTime)}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
                 </div>
             </div>
         </div>

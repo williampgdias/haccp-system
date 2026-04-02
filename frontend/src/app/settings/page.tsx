@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/services/api';
 
 /**
  * Interface representing a Team Member from the database.
@@ -61,15 +62,9 @@ export default function SettingsPage() {
         setIsFetchingTeam(true);
         try {
             const [resFridges, resAreas, resTeam] = await Promise.all([
-                fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/logs/equipment/${restaurantId}`,
-                ),
-                fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning-areas/${restaurantId}`,
-                ),
-                fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/team/${restaurantId}`,
-                ),
+                apiFetch(`/logs/equipment/${restaurantId}`),
+                apiFetch(`/logs/cleaning-areas/${restaurantId}`),
+                apiFetch(`/team/${restaurantId}`),
             ]);
 
             if (resFridges.ok) setFridges(await resFridges.json());
@@ -108,14 +103,10 @@ export default function SettingsPage() {
                 : { name, restaurantId };
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                },
-            );
+            const res = await apiFetch(`/${endpoint}`, {
+                method: 'POST',
+                body: JSON.stringify(body),
+            });
 
             if (res.ok) {
                 toast.success(
@@ -143,12 +134,9 @@ export default function SettingsPage() {
         const endpoint =
             type === 'fridge' ? 'logs/equipment' : 'logs/cleaning-areas';
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}/${id}`,
-                {
-                    method: 'DELETE',
-                },
-            );
+            const res = await apiFetch(`/${endpoint}/${id}`, {
+                method: 'DELETE',
+            });
             if (res.ok) {
                 toast.success('Removed successfully!');
                 await fetchData();
@@ -167,9 +155,8 @@ export default function SettingsPage() {
         setTeamMessage('');
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/team`, {
+            const res = await apiFetch(`/team`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: staffName,
                     email: staffEmail,
@@ -202,14 +189,10 @@ export default function SettingsPage() {
         const newRole = currentRole === 'ADMIN' ? 'STAFF' : 'ADMIN';
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/team/${memberId}/role`,
-                {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ role: newRole }),
-                },
-            );
+            const res = await apiFetch(`/team/${memberId}/role`, {
+                method: 'PATCH',
+                body: JSON.stringify({ role: newRole }),
+            });
 
             if (res.ok) {
                 toast.success('Role updated!');
@@ -226,12 +209,9 @@ export default function SettingsPage() {
     const handleDeleteTeamMember = async (id: string) => {
         if (!confirm('Permanently remove this team member?')) return;
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/team/${id}`,
-                {
-                    method: 'DELETE',
-                },
-            );
+            const res = await apiFetch(`/team/${id}`, {
+                method: 'DELETE',
+            });
             if (res.ok) {
                 toast.success('Member removed');
                 await fetchData();

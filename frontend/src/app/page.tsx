@@ -14,6 +14,7 @@ import TemperaturesCard from '@/components/dashboard/TemperaturesCard';
 import CookingCard from '@/components/dashboard/CookingCard';
 import DeliveryCard from '@/components/dashboard/DeliveryCard';
 import CleaningCard from '@/components/dashboard/CleaningCard';
+import { apiFetch } from '@/services/api';
 
 export default function Home() {
     const { data: session, status } = useSession();
@@ -48,9 +49,7 @@ export default function Home() {
 
             try {
                 // One single request to get the whole "Kitchen Overview"
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats/${restaurantId}`,
-                );
+                const res = await apiFetch(`/dashboard/stats/${restaurantId}`);
 
                 if (!res.ok) throw new Error('Failed to fetch');
 

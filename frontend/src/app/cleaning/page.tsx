@@ -5,6 +5,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/services/api';
+import ExportPDF from '@/components/ui/ExportPDF';
 
 export default function CleaningPage() {
     const { data: session } = useSession();
@@ -42,12 +44,8 @@ export default function CleaningPage() {
         try {
             setIsFetchingLogs(true);
             const [resLogs, resAreas] = await Promise.all([
-                fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning/${restaurantId}`,
-                ),
-                fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning-areas/${restaurantId}`,
-                ),
+                apiFetch(`/logs/cleaning/${restaurantId}`),
+                apiFetch(`/logs/cleaning-areas/${restaurantId}`),
             ]);
 
             if (resLogs.ok) setLogs(await resLogs.json());
@@ -81,21 +79,17 @@ export default function CleaningPage() {
         const selectedAreaObj = areas.find((a) => a.id === selectedAreaId);
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/logs/cleaning`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        restaurantId,
-                        cleaningAreaId: selectedAreaId, // Essential for Prisma Relation
-                        area: selectedAreaObj?.name, // Display name for history
-                        status: status,
-                        initials: formData.get('initials'),
-                        comments: formData.get('comments') || '',
-                    }),
-                },
-            );
+            const res = await apiFetch(`/logs/cleaning`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    restaurantId,
+                    cleaningAreaId: selectedAreaId, // Essential for Prisma Relation
+                    area: selectedAreaObj?.name, // Display name for history
+                    status: status,
+                    initials: formData.get('initials'),
+                    comments: formData.get('comments') || '',
+                }),
+            });
 
             if (res.ok) {
                 form.reset();
@@ -123,6 +117,8 @@ export default function CleaningPage() {
                     Track daily hygiene and sanitation tasks.
                 </p>
             </header>
+
+            <ExportPDF reportType="cleaning" />
 
             {/* FORM SECTION */}
             <form
