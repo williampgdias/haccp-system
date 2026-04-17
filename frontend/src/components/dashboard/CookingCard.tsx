@@ -10,7 +10,7 @@ export default function CookingCard({ isLoading, activity }: Props) {
         const todayStr = new Date().toLocaleDateString();
         return (
             <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-3 mt-4 first:mt-0">
-                📅 {dateStr === todayStr ? 'Today' : dateStr}
+                {dateStr === todayStr ? 'Today' : dateStr}
             </h4>
         );
     };
@@ -27,7 +27,7 @@ export default function CookingCard({ isLoading, activity }: Props) {
     return (
         <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col h-80 sm:h-96">
             <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2">
-                👨‍🍳 Cooking & Cooling
+                Cooking & Cooling
             </h3>
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 {isLoading ? (
@@ -91,7 +91,7 @@ export default function CookingCard({ isLoading, activity }: Props) {
                                                 </span>
                                                 {item.coolingFinishTime && (
                                                     <span className="text-[8px] sm:text-[9px] font-bold text-blue-500 uppercase flex items-center gap-1 mt-0.5">
-                                                        Cooled ❄️
+                                                        Cooled
                                                     </span>
                                                 )}
                                             </div>

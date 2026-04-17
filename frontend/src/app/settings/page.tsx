@@ -167,16 +167,16 @@ export default function SettingsPage() {
 
             if (!res.ok) {
                 const data = await res.json();
-                setTeamMessage(`❌ Error: ${data.error}`);
+                setTeamMessage(`Error: ${data.error}`);
             } else {
-                setTeamMessage('✅ Staff added successfully!');
+                setTeamMessage('Staff added successfully!');
                 setStaffName('');
                 setStaffEmail('');
                 setStaffRole('STAFF');
                 await fetchData();
             }
         } catch (error) {
-            setTeamMessage('❌ Connection failed');
+            setTeamMessage('Connection failed');
         } finally {
             setIsSubmittingTeam(false);
         }
@@ -228,7 +228,7 @@ export default function SettingsPage() {
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                    Kitchen Setup ⚙️
+                    Kitchen Setup
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
                     Manage your infrastructure, safety zones, and team access.
@@ -239,7 +239,7 @@ export default function SettingsPage() {
                 {/* COLD STORAGE */}
                 <section>
                     <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                        ❄️ Cold Storage
+                        Cold Storage
                     </h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <form
@@ -285,7 +285,7 @@ export default function SettingsPage() {
                 {/* CLEANING ZONES */}
                 <section>
                     <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                        ✨ Cleaning Zones
+                        Cleaning Zones
                     </h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <form
@@ -331,7 +331,7 @@ export default function SettingsPage() {
                 {/* TEAM MANAGEMENT */}
                 <section>
                     <h3 className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                        👨‍🍳 Team Management
+                        Team Management
                     </h3>
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-3 sm:p-4 border-b border-slate-100">
@@ -415,7 +415,7 @@ export default function SettingsPage() {
                                                     }`}
                                                     title="Click to change role"
                                                 >
-                                                    {member.role} 🔄
+                                                    {member.role}
                                                 </span>
                                             </span>
                                         </div>

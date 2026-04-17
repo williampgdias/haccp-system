@@ -48,7 +48,6 @@ export default function ForgotPasswordPage() {
 
                 {sent ? (
                     <div className="text-center space-y-4">
-                        <div className="text-4xl">📧</div>
                         <h2 className="text-lg font-black text-slate-900">Check your email</h2>
                         <p className="text-slate-500 text-sm">
                             If an account exists for <strong>{email}</strong>, we&apos;ve sent a reset link. It expires in 1 hour.
@@ -64,7 +63,7 @@ export default function ForgotPasswordPage() {
                     <>
                         {error && (
                             <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-black text-center mb-6 border border-red-100 uppercase tracking-wide">
-                                ⚠️ {error}
+                                {error}
                             </div>
                         )}
 

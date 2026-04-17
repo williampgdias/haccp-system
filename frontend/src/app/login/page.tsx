@@ -39,13 +39,13 @@ function LoginForm() {
         <>
             {resetSuccess && (
                 <div className="bg-green-50 text-green-700 p-4 rounded-2xl text-xs font-black text-center mb-6 border border-green-100 uppercase tracking-wide">
-                    ✓ Password updated! Please sign in.
+                    Password updated! Please sign in.
                 </div>
             )}
 
             {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-black text-center mb-6 border border-red-100 uppercase tracking-wide">
-                    ⚠️ {error}
+                    {error}
                 </div>
             )}
 

@@ -146,7 +146,7 @@ export default function OnboardingPage() {
                             }`}
                         >
                             <p className={`text-[10px] font-black uppercase tracking-wide ${s.id === step ? 'text-blue-600' : s.id < step ? 'text-green-600' : 'text-slate-400'}`}>
-                                {s.id < step ? '✓ Done' : `Step ${s.id}`}
+                                {s.id < step ? 'Done' : `Step ${s.id}`}
                             </p>
                             <p className="text-xs font-bold text-slate-700 mt-0.5 leading-tight">{s.title}</p>
                         </div>
@@ -183,7 +183,7 @@ export default function OnboardingPage() {
                                                 onClick={() => setEquipmentType(t)}
                                                 className={`flex-1 p-2.5 rounded-lg text-xs font-black border-2 transition-all ${equipmentType === t ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                                             >
-                                                {t === 'FRIDGE' ? '🧊 Fridge' : '❄️ Freezer'}
+                                                {t === 'FRIDGE' ? 'Fridge' : 'Freezer'}
                                             </button>
                                         ))}
                                     </div>
@@ -200,7 +200,7 @@ export default function OnboardingPage() {
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {equipmentAdded.map((eq) => (
                                         <span key={eq} className="bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-3 py-1 rounded-full">
-                                            ✓ {eq}
+                                            {eq}
                                         </span>
                                     ))}
                                 </div>
@@ -235,7 +235,7 @@ export default function OnboardingPage() {
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {areasAdded.map((area) => (
                                         <span key={area} className="bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-3 py-1 rounded-full">
-                                            ✓ {area}
+                                            {area}
                                         </span>
                                     ))}
                                 </div>
@@ -281,7 +281,7 @@ export default function OnboardingPage() {
                                 <div className="flex flex-wrap gap-2 mb-4">
                                     {staffAdded.map((name) => (
                                         <span key={name} className="bg-green-50 text-green-700 border border-green-200 text-xs font-bold px-3 py-1 rounded-full">
-                                            ✓ {name}
+                                            {name}
                                         </span>
                                     ))}
                                 </div>

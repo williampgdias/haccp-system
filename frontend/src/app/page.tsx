@@ -245,7 +245,7 @@ export default function Home() {
                     className={`p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border ${stats.highTempAlerts > 0 ? 'bg-red-50 border-red-200 animate-pulse' : 'bg-white border-slate-200'}`}
                 >
                     <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
-                        High Temp Alerts ⚠️
+                        High Temp Alerts
                     </h3>
                     <div className="flex items-end gap-2">
                         <p
@@ -262,7 +262,7 @@ export default function Home() {
                 {/* TOTAL INFRASTRUCTURE */}
                 <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
                     <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
-                        Total Equipment ❄️
+                        Total Equipment
                     </h3>
                     <div className="flex items-end gap-2">
                         <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">
@@ -277,7 +277,7 @@ export default function Home() {
                 {/* TOTAL STAFF */}
                 <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
                     <h3 className="text-slate-400 text-[9px] sm:text-[10px] font-bold mb-1 uppercase tracking-widest">
-                        Active Team 👨‍🍳
+                        Active Team
                     </h3>
                     <div className="flex items-end gap-2">
                         <p className="text-2xl sm:text-3xl font-black text-slate-800 leading-none">

@@ -18,7 +18,6 @@ function ResetPasswordForm() {
     if (!token) {
         return (
             <div className="text-center space-y-4">
-                <div className="text-4xl">❌</div>
                 <h2 className="text-lg font-black text-slate-900">Invalid Link</h2>
                 <p className="text-slate-500 text-sm">This reset link is missing or invalid.</p>
                 <Link href="/forgot-password" className="block w-full text-center bg-blue-600 text-white font-black py-4 rounded-2xl hover:bg-blue-700 transition-all mt-4">
@@ -67,7 +66,7 @@ function ResetPasswordForm() {
         <>
             {error && (
                 <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-xs font-black text-center mb-6 border border-red-100 uppercase tracking-wide">
-                    ⚠️ {error}
+                    {error}
                 </div>
             )}
 

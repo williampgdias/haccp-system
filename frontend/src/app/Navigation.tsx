@@ -19,11 +19,11 @@ export default function Navigation() {
 
     // Base links available to all kitchen staff
     const links = [
-        { href: '/', label: '📊 Dashboard' },
-        { href: '/temperatures', label: '🌡️ Temperatures' },
-        { href: '/cooking', label: '👨‍🍳 Cooking' },
-        { href: '/deliveries', label: '📦 Deliveries' },
-        { href: '/cleaning', label: '✨ Cleaning' },
+        { href: '/', label: 'Dashboard' },
+        { href: '/temperatures', label: 'Temperatures' },
+        { href: '/cooking', label: 'Cooking' },
+        { href: '/deliveries', label: 'Deliveries' },
+        { href: '/cleaning', label: 'Cleaning' },
     ];
 
     /**
@@ -32,7 +32,7 @@ export default function Navigation() {
      * This prevents Staff members from even seeing the management area.
      */
     if (userRole === 'ADMIN') {
-        links.push({ href: '/settings', label: '⚙️ Settings' });
+        links.push({ href: '/settings', label: 'Settings' });
     }
 
     return (

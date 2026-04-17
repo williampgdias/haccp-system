@@ -66,5 +66,5 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // START SERVER
 // ==========================================
 app.listen(port, () => {
-    console.log(`🚀 HACCP Pro Server running on port ${port}`);
+    console.log(`HACCP Pro Server running on port ${port}`);
 });

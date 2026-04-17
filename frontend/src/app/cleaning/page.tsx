@@ -111,7 +111,7 @@ export default function CleaningPage() {
         <div className="max-w-3xl mx-auto p-4 md:p-8 font-sans">
             <header className="mb-6 sm:mb-8">
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                    Cleaning Schedule ✨
+                    Cleaning Schedule
                 </h2>
                 <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
                     Track daily hygiene and sanitation tasks.
@@ -137,7 +137,7 @@ export default function CleaningPage() {
                             className={`flex-1 p-2.5 sm:p-3 rounded-lg uppercase text-xs font-black transition-all border-2 
                                 ${status === 'CLEAN' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                         >
-                            ✨ Cleaned
+                            Cleaned
                         </button>
                         <button
                             type="button"
@@ -145,7 +145,7 @@ export default function CleaningPage() {
                             className={`flex-1 p-2.5 sm:p-3 rounded-lg uppercase text-xs font-black transition-all border-2 
                                 ${status === 'PENDING' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                         >
-                            ⏳ Pending
+                            Pending
                         </button>
                     </div>
                 </div>
