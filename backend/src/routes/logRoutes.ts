@@ -46,6 +46,31 @@ router.get('/cooking/:restaurantId', async (req, res) => {
 });
 
 /**
+ * PATCH /cooking/:id
+ * Updates an existing cooking log.
+ */
+router.patch('/cooking/:id', async (req, res) => {
+    try {
+        const { foodItem, cookTemp, cookTime, reheatTemp, reheatTime, initials } = req.body;
+        const log = await prisma.cookingLog.update({
+            where: { id: req.params.id },
+            data: {
+                foodItem,
+                cookTemp: cookTemp != null ? parseFloat(cookTemp) : null,
+                cookTime: cookTime || null,
+                reheatTemp: reheatTemp != null ? parseFloat(reheatTemp) : null,
+                reheatTime: reheatTime || null,
+                initials,
+            },
+        });
+        res.json(log);
+    } catch (error) {
+        console.error('Error updating cooking log:', error);
+        res.status(500).json({ error: 'Failed to update cooking log' });
+    }
+});
+
+/**
  * PUT /cooking/:id/cooling
  * Updates an existing cooking log to include the cooling phase data.
  * This ensures HACCP compliance by tracking the temperature drop over time.
@@ -215,6 +240,32 @@ router.post('/delivery', async (req, res) => {
 });
 
 /**
+ * PATCH /delivery/:id
+ * Updates an existing delivery log.
+ */
+router.patch('/delivery/:id', async (req, res) => {
+    try {
+        const { category, productName, supplier, invoiceNumber, temperature, initials, comments } = req.body;
+        const log = await prisma.deliveryLog.update({
+            where: { id: req.params.id },
+            data: {
+                category,
+                productName,
+                supplier,
+                invoiceNumber,
+                temperature: parseFloat(temperature),
+                initials,
+                comments: comments || '',
+            },
+        });
+        res.json(log);
+    } catch (error) {
+        console.error('Error updating delivery log:', error);
+        res.status(500).json({ error: 'Failed to update delivery log' });
+    }
+});
+
+/**
  * GET /delivery/:restaurantId
  * Retrieves the 10 most recent delivery logs for quick dashboard overview.
  */
@@ -289,6 +340,27 @@ router.post('/temperatures', async (req, res) => {
     } catch (error) {
         console.error('Error saving temperature log:', error);
         res.status(500).json({ error: 'Failed to create temperature log' });
+    }
+});
+
+/**
+ * PATCH /temperatures/:id
+ * Updates an existing temperature log.
+ */
+router.patch('/temperatures/:id', async (req, res) => {
+    try {
+        const { temperature, initials } = req.body;
+        const log = await prisma.temperatureLog.update({
+            where: { id: req.params.id },
+            data: {
+                temperature: parseFloat(temperature),
+                initials,
+            },
+        });
+        res.json(log);
+    } catch (error) {
+        console.error('Error updating temperature log:', error);
+        res.status(500).json({ error: 'Failed to update temperature log' });
     }
 });
 

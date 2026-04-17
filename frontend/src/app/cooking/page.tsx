@@ -12,10 +12,14 @@ export default function CookingPage() {
     const { data: session } = useSession();
     const [logs, setLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [processType, setProcessType] = useState<'Cooking' | 'Reheating'>(
-        'Cooking',
-    );
+    const [processType, setProcessType] = useState<'Cooking' | 'Reheating'>('Cooking');
     const [coolingTargetId, setCoolingTargetId] = useState<string | null>(null);
+    const [editingLog, setEditingLog] = useState<any | null>(null);
+
+    const [foodItem, setFoodItem] = useState('');
+    const [coreTemp, setCoreTemp] = useState('');
+    const [timeChecked, setTimeChecked] = useState('');
+    const [initialsInput, setInitialsInput] = useState('');
 
     const restaurantId = (session?.user as any)?.restaurantId;
 
@@ -37,6 +41,15 @@ export default function CookingPage() {
         return `${hours12}:${m} ${suffix}`;
     };
 
+    const defaultTime = new Date().toTimeString().substring(0, 5);
+
+    useEffect(() => {
+        if (session?.user?.name) {
+            setInitialsInput(getInitials(session.user.name));
+            setTimeChecked(defaultTime);
+        }
+    }, [session]);
+
     const fetchLogs = useCallback(async () => {
         if (!restaurantId) return;
         try {
@@ -51,33 +64,68 @@ export default function CookingPage() {
         fetchLogs();
     }, [fetchLogs]);
 
+    const startEdit = (log: any) => {
+        const isCooking = !!log.cookTemp;
+        setEditingLog(log);
+        setProcessType(isCooking ? 'Cooking' : 'Reheating');
+        setFoodItem(log.foodItem);
+        setCoreTemp(String(isCooking ? log.cookTemp : log.reheatTemp));
+        setTimeChecked(isCooking ? log.cookTime : log.reheatTime);
+        setInitialsInput(log.initials);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const cancelEdit = () => {
+        setEditingLog(null);
+        setFoodItem('');
+        setCoreTemp('');
+        setTimeChecked(defaultTime);
+        setInitialsInput(getInitials(session?.user?.name));
+        setProcessType('Cooking');
+    };
+
     async function saveCookingLog(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setIsLoading(true);
-        const formData = new FormData(e.currentTarget);
+
         const payload: any = {
             restaurantId,
-            foodItem: formData.get('foodItem'),
-            initials: formData.get('initials'),
+            foodItem,
+            initials: initialsInput,
         };
 
-        if (processType === 'Cooking') {
-            payload.cookTemp = parseFloat(formData.get('coreTemp') as string);
-            payload.cookTime = formData.get('timeChecked');
+        if (editingLog) {
+            const isCooking = processType === 'Cooking';
+            payload.cookTemp = isCooking ? parseFloat(coreTemp) : null;
+            payload.cookTime = isCooking ? timeChecked : null;
+            payload.reheatTemp = !isCooking ? parseFloat(coreTemp) : null;
+            payload.reheatTime = !isCooking ? timeChecked : null;
         } else {
-            payload.reheatTemp = parseFloat(formData.get('coreTemp') as string);
-            payload.reheatTime = formData.get('timeChecked');
+            if (processType === 'Cooking') {
+                payload.cookTemp = parseFloat(coreTemp);
+                payload.cookTime = timeChecked;
+            } else {
+                payload.reheatTemp = parseFloat(coreTemp);
+                payload.reheatTime = timeChecked;
+            }
         }
 
         try {
-            const res = await apiFetch(`/logs/cooking`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
+            const res = editingLog
+                ? await apiFetch(`/logs/cooking/${editingLog.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload),
+                  })
+                : await apiFetch(`/logs/cooking`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload),
+                  });
+
             if (res.ok) {
-                toast.success('Cooking record saved!');
-                (e.target as HTMLFormElement).reset();
+                toast.success(editingLog ? 'Cooking record updated!' : 'Cooking record saved!');
+                cancelEdit();
                 fetchLogs();
             }
         } catch (error) {
@@ -146,7 +194,6 @@ export default function CookingPage() {
                                 className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                             />
                         </div>
-
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                                 Cooling Finish Temp
@@ -161,7 +208,6 @@ export default function CookingPage() {
                             />
                         </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             type="submit"
@@ -169,7 +215,6 @@ export default function CookingPage() {
                         >
                             Save Cooling Log
                         </button>
-
                         <button
                             type="button"
                             onClick={() => setCoolingTargetId(null)}
@@ -184,6 +229,21 @@ export default function CookingPage() {
                     onSubmit={saveCookingLog}
                     className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
                 >
+                    {editingLog && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex justify-between items-center">
+                            <p className="text-xs font-black text-blue-700 uppercase tracking-wide">
+                                Editing: {editingLog.foodItem}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={cancelEdit}
+                                className="text-xs font-bold text-blue-500 hover:text-blue-700"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
+
                     <div>
                         <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Process
@@ -192,7 +252,7 @@ export default function CookingPage() {
                             <button
                                 type="button"
                                 onClick={() => setProcessType('Cooking')}
-                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2
                                 ${processType === 'Cooking' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                             >
                                 COOKING
@@ -200,7 +260,7 @@ export default function CookingPage() {
                             <button
                                 type="button"
                                 onClick={() => setProcessType('Reheating')}
-                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2
                                 ${processType === 'Reheating' ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                             >
                                 REHEATING
@@ -213,9 +273,10 @@ export default function CookingPage() {
                             Food Item
                         </label>
                         <input
-                            name="foodItem"
                             required
                             placeholder="Ex: Roast Chicken"
+                            value={foodItem}
+                            onChange={(e) => setFoodItem(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
@@ -226,11 +287,12 @@ export default function CookingPage() {
                                 Core Temp
                             </label>
                             <input
-                                name="coreTemp"
                                 type="number"
                                 step="0.1"
                                 required
                                 placeholder="75.0"
+                                value={coreTemp}
+                                onChange={(e) => setCoreTemp(e.target.value)}
                                 className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                             />
                         </div>
@@ -239,12 +301,10 @@ export default function CookingPage() {
                                 Time
                             </label>
                             <input
-                                name="timeChecked"
                                 type="time"
                                 required
-                                defaultValue={new Date()
-                                    .toTimeString()
-                                    .substring(0, 5)}
+                                value={timeChecked}
+                                onChange={(e) => setTimeChecked(e.target.value)}
                                 className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                             />
                         </div>
@@ -253,9 +313,9 @@ export default function CookingPage() {
                                 Initials
                             </label>
                             <input
-                                name="initials"
                                 required
-                                defaultValue={getInitials(session?.user?.name)}
+                                value={initialsInput}
+                                onChange={(e) => setInitialsInput(e.target.value.toUpperCase())}
                                 className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                             />
                         </div>
@@ -266,7 +326,11 @@ export default function CookingPage() {
                         disabled={isLoading}
                         className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
                     >
-                        Save Cooking Log
+                        {isLoading
+                            ? 'Saving...'
+                            : editingLog
+                              ? 'Update Cooking Record'
+                              : 'Save Cooking Log'}
                     </button>
                 </form>
             )}
@@ -281,11 +345,12 @@ export default function CookingPage() {
                         const temp = isCooking ? log.cookTemp : log.reheatTemp;
                         const isSafe = temp >= 75;
                         const isCoolingPending = !log.coolingFinishTime;
+                        const isBeingEdited = editingLog?.id === log.id;
 
                         return (
                             <div
                                 key={log.id}
-                                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-orange-200"
+                                className={`bg-white p-5 rounded-2xl border shadow-sm transition-all ${isBeingEdited ? 'border-blue-400 ring-2 ring-blue-100' : 'hover:border-orange-200 border-slate-200'}`}
                             >
                                 <div className="flex justify-between items-center mb-4">
                                     <div className="space-y-1">
@@ -296,24 +361,26 @@ export default function CookingPage() {
                                             <span
                                                 className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${isCooking ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-red-50 text-red-600 border-red-100'}`}
                                             >
-                                                {isCooking
-                                                    ? 'COOKING'
-                                                    : 'REHEATING'}
+                                                {isCooking ? 'COOKING' : 'REHEATING'}
                                             </span>
                                         </div>
                                         <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
                                             By {log.initials} •{' '}
-                                            {format12h(
-                                                isCooking
-                                                    ? log.cookTime
-                                                    : log.reheatTime,
-                                            )}
+                                            {format12h(isCooking ? log.cookTime : log.reheatTime)}
                                         </p>
                                     </div>
-                                    <div
-                                        className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
-                                    >
-                                        {temp}°C
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div
+                                            className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                        >
+                                            {temp}°C
+                                        </div>
+                                        <button
+                                            onClick={() => startEdit(log)}
+                                            className="text-[10px] font-bold text-slate-400 hover:text-blue-600 uppercase tracking-tighter transition-colors"
+                                        >
+                                            Edit
+                                        </button>
                                     </div>
                                 </div>
 
@@ -324,9 +391,7 @@ export default function CookingPage() {
                                                 Cooling Process Required
                                             </p>
                                             <button
-                                                onClick={() =>
-                                                    setCoolingTargetId(log.id)
-                                                }
+                                                onClick={() => setCoolingTargetId(log.id)}
                                                 className="bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-lg shadow-md"
                                             >
                                                 RECORD COOLING

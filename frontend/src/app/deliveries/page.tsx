@@ -13,6 +13,14 @@ export default function DeliveriesPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [category, setCategory] = useState<'Meat' | 'Dairy'>('Meat');
+    const [editingLog, setEditingLog] = useState<any | null>(null);
+
+    const [productName, setProductName] = useState('');
+    const [supplier, setSupplier] = useState('');
+    const [invoiceNumber, setInvoiceNumber] = useState('');
+    const [temperature, setTemperature] = useState('');
+    const [initialsInput, setInitialsInput] = useState('');
+    const [commentsInput, setCommentsInput] = useState('');
 
     const restaurantId = (session?.user as any)?.restaurantId;
 
@@ -33,6 +41,12 @@ export default function DeliveriesPage() {
         });
     };
 
+    useEffect(() => {
+        if (session?.user?.name) {
+            setInitialsInput(getInitials(session.user.name));
+        }
+    }, [session]);
+
     const fetchData = useCallback(async () => {
         if (!restaurantId) return;
         try {
@@ -50,33 +64,58 @@ export default function DeliveriesPage() {
         fetchData();
     }, [fetchData]);
 
+    const startEdit = (log: any) => {
+        setEditingLog(log);
+        setCategory(log.category);
+        setProductName(log.productName);
+        setSupplier(log.supplier);
+        setInvoiceNumber(log.invoiceNumber);
+        setTemperature(String(log.temperature));
+        setInitialsInput(log.initials);
+        setCommentsInput(log.comments || '');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const cancelEdit = () => {
+        setEditingLog(null);
+        setProductName('');
+        setSupplier('');
+        setInvoiceNumber('');
+        setTemperature('');
+        setInitialsInput(getInitials(session?.user?.name));
+        setCommentsInput('');
+        setCategory('Meat');
+    };
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setIsLoading(true);
-        const formData = new FormData(e.currentTarget);
+
+        const payload = {
+            restaurantId,
+            category,
+            productName,
+            supplier,
+            invoiceNumber,
+            temperature: parseFloat(temperature),
+            initials: initialsInput.toUpperCase(),
+            comments: commentsInput,
+        };
 
         try {
-            const res = await apiFetch(`/logs/delivery`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    restaurantId,
-                    category,
-                    productName: formData.get('productName'),
-                    supplier: formData.get('supplier'),
-                    invoiceNumber: formData.get('invoiceNumber'),
-                    temperature: parseFloat(
-                        formData.get('temperature') as string,
-                    ),
-                    initials: (
-                        formData.get('initials') as string
-                    ).toUpperCase(),
-                    comments: formData.get('comments') || '',
-                }),
-            });
+            const res = editingLog
+                ? await apiFetch(`/logs/delivery/${editingLog.id}`, {
+                      method: 'PATCH',
+                      body: JSON.stringify(payload),
+                  })
+                : await apiFetch(`/logs/delivery`, {
+                      method: 'POST',
+                      body: JSON.stringify(payload),
+                  });
 
             if (res.ok) {
-                toast.success('Delivery recorded!');
-                (e.target as HTMLFormElement).reset();
+                toast.success(editingLog ? 'Delivery updated!' : 'Delivery recorded!');
+                cancelEdit();
                 fetchData();
             }
         } catch (err) {
@@ -103,20 +142,35 @@ export default function DeliveriesPage() {
                 onSubmit={handleSubmit}
                 className="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-10"
             >
+                {editingLog && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 flex justify-between items-center">
+                        <p className="text-xs font-black text-blue-700 uppercase tracking-wide">
+                            Editing: {editingLog.productName}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="text-xs font-bold text-blue-500 hover:text-blue-700"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                )}
+
                 <div>
                     <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                         Category
                     </label>
                     <div className="flex gap-3 sm:gap-4">
-                        {['Meat', 'Dairy'].map((cat) => (
+                        {(['Meat', 'Dairy'] as const).map((cat) => (
                             <button
                                 key={cat}
                                 type="button"
-                                onClick={() => setCategory(cat as any)}
-                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2 
+                                onClick={() => setCategory(cat)}
+                                className={`flex-1 p-2.5 sm:p-3 rounded-lg text-xs font-black transition-all border-2
                                 ${category === cat ? 'border-slate-900 bg-slate-100 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400'}`}
                             >
-                                {cat === 'Meat' ? 'MEAT' : 'DAIRY'}
+                                {cat.toUpperCase()}
                             </button>
                         ))}
                     </div>
@@ -128,9 +182,10 @@ export default function DeliveriesPage() {
                             Product
                         </label>
                         <input
-                            name="productName"
                             required
                             placeholder="Ex: Chicken"
+                            value={productName}
+                            onChange={(e) => setProductName(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
@@ -139,9 +194,10 @@ export default function DeliveriesPage() {
                             Supplier
                         </label>
                         <input
-                            name="supplier"
                             required
                             placeholder="Ex: Sysco"
+                            value={supplier}
+                            onChange={(e) => setSupplier(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
@@ -153,9 +209,10 @@ export default function DeliveriesPage() {
                             Invoice #
                         </label>
                         <input
-                            name="invoiceNumber"
                             required
                             placeholder="INV-001"
+                            value={invoiceNumber}
+                            onChange={(e) => setInvoiceNumber(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
@@ -164,11 +221,12 @@ export default function DeliveriesPage() {
                             Temp (°C)
                         </label>
                         <input
-                            name="temperature"
                             type="number"
                             step="0.1"
                             required
                             placeholder="3.5"
+                            value={temperature}
+                            onChange={(e) => setTemperature(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
@@ -180,9 +238,9 @@ export default function DeliveriesPage() {
                             Initials
                         </label>
                         <input
-                            name="initials"
                             required
-                            defaultValue={getInitials(session?.user?.name)}
+                            value={initialsInput}
+                            onChange={(e) => setInitialsInput(e.target.value.toUpperCase())}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold uppercase"
                         />
                     </div>
@@ -191,8 +249,9 @@ export default function DeliveriesPage() {
                             Comments
                         </label>
                         <input
-                            name="comments"
                             placeholder="Optional..."
+                            value={commentsInput}
+                            onChange={(e) => setCommentsInput(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
@@ -203,7 +262,11 @@ export default function DeliveriesPage() {
                     disabled={isLoading}
                     className="w-full bg-slate-950 text-white font-semi-bold py-4 rounded-2xl hover:opacity-90 transition-all shadow-lg active:scale-[0.98]"
                 >
-                    {isLoading ? 'SAVING...' : 'Save Delivery Record'}
+                    {isLoading
+                        ? 'SAVING...'
+                        : editingLog
+                          ? 'Update Delivery Record'
+                          : 'Save Delivery Record'}
                 </button>
             </form>
 
@@ -211,47 +274,60 @@ export default function DeliveriesPage() {
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 mb-4">
                     Recent History
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                    {logs.map((log) => {
-                        const isSafe = log.temperature <= 5;
-                        return (
-                            <div
-                                key={log.id}
-                                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-center group hover:border-blue-200 transition-all"
-                            >
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm font-black text-slate-800">
-                                            {log.productName}
-                                        </span>
-                                        <span
-                                            className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${log.category === 'Meat' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}
-                                        >
-                                            {log.category.toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                                        {log.supplier} • {log.invoiceNumber}
-                                    </p>
-                                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
-                                        By {log.initials} •{' '}
-                                        {formatIsoTo12h(log.createdAt)}
-                                    </p>
-                                    {log.comments && (
-                                        <div className="text-[10px] border-l-2 border-slate-300 pl-2 text-slate-500 italic font-medium tracking-wider">
-                                            {log.comments}
-                                        </div>
-                                    )}
-                                </div>
+                {isFetching ? (
+                    <p className="text-slate-400 text-xs animate-pulse font-medium">Loading history...</p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                        {logs.map((log) => {
+                            const isSafe = log.temperature <= 5;
+                            const isBeingEdited = editingLog?.id === log.id;
+                            return (
                                 <div
-                                    className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                    key={log.id}
+                                    className={`bg-white p-5 rounded-2xl border shadow-sm flex justify-between items-center group transition-all ${isBeingEdited ? 'border-blue-400 ring-2 ring-blue-100' : 'border-slate-200 hover:border-blue-200'}`}
                                 >
-                                    {log.temperature.toFixed(1)}°C
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-black text-slate-800">
+                                                {log.productName}
+                                            </span>
+                                            <span
+                                                className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${log.category === 'Meat' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}
+                                            >
+                                                {log.category.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                                            {log.supplier} • {log.invoiceNumber}
+                                        </p>
+                                        <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
+                                            By {log.initials} •{' '}
+                                            {formatIsoTo12h(log.createdAt)}
+                                        </p>
+                                        {log.comments && (
+                                            <div className="text-[10px] border-l-2 border-slate-300 pl-2 text-slate-500 italic font-medium tracking-wider">
+                                                {log.comments}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div
+                                            className={`px-4 py-2 rounded-xl border font-black text-xl shadow-inner ${isSafe ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}
+                                        >
+                                            {log.temperature.toFixed(1)}°C
+                                        </div>
+                                        <button
+                                            onClick={() => startEdit(log)}
+                                            className="text-[10px] font-bold text-slate-400 hover:text-blue-600 uppercase tracking-tighter transition-colors"
+                                        >
+                                            Edit
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );
