@@ -22,7 +22,7 @@ export default function SetupPage() {
 
             if (res.ok) {
                 toast.success('Account created! Please sign in.');
-                router.push('/login');
+                router.push('/login?onboarding=1');
             } else {
                 toast.error('Registration failed. Email might be in use.');
             }

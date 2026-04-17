@@ -2,6 +2,7 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function Header() {
     const { data: session } = useSession();
@@ -68,11 +69,13 @@ export default function Header() {
                     </span>
                 </div>
 
-                {/* Action Group: Avatar + Logout */}
+                {/* Action Group: Avatar + Profile + Logout */}
                 <div className="flex items-center gap-2 sm:gap-3 sm:pl-4 sm:border-l sm:border-slate-100">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm border-2 border-white ring-2 ring-slate-100 shadow-sm shrink-0">
-                        {userInitials}
-                    </div>
+                    <Link href="/profile" title="My Profile">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm border-2 border-white ring-2 ring-slate-100 shadow-sm shrink-0 hover:opacity-80 transition-opacity cursor-pointer">
+                            {userInitials}
+                        </div>
+                    </Link>
 
                     <button
                         onClick={() => signOut({ callbackUrl: '/login' })}

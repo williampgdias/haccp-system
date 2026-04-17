@@ -1,43 +1,46 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import prisma from '../prisma.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
 
 const router = Router();
 
-/**
- * ==========================================
- * TEAM MANAGEMENT (STAFF)
- * ==========================================
- */
+// ==========================================
+// VALIDATION SCHEMAS
+// ==========================================
+const createStaffSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+    restaurantId: z.string().uuid('Invalid restaurant ID'),
+    role: z.enum(['ADMIN', 'STAFF']).optional(),
+});
 
-/**
- * POST /
- * Creates a new team member. Accepts name, email, restaurantId, and optional role.
- * Role defaults to 'STAFF' but can be 'ADMIN'.
- */
+const updateRoleSchema = z.object({
+    role: z.enum(['ADMIN', 'STAFF'], { message: 'Role must be ADMIN or STAFF' }),
+});
+
+// ==========================================
+// POST /
+// Creates a new team member and sends welcome email
+// ==========================================
 router.post('/', async (req, res) => {
     try {
-        const { name, email, restaurantId, role } = req.body;
-
-        if (!name || !email || !restaurantId) {
-            return res.status(400).json({
-                error: 'Name, email, and restaurant ID are required.',
-            });
+        const parsed = createStaffSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.errors[0].message });
         }
 
-        // Validate that the role is either ADMIN or STAFF
-        if (role && role !== 'ADMIN' && role !== 'STAFF') {
-            return res
-                .status(400)
-                .json({ error: 'Invalid role. Must be ADMIN or STAFF.' });
-        }
+        const { name, email, restaurantId, role } = parsed.data;
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
-
         if (existingUser) {
-            return res
-                .status(400)
-                .json({ error: 'This email is already registered.' });
+            return res.status(400).json({ error: 'This email is already registered.' });
+        }
+
+        const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId } });
+        if (!restaurant) {
+            return res.status(404).json({ error: 'Restaurant not found.' });
         }
 
         const defaultPassword = 'HaccpPassword123!';
@@ -48,12 +51,19 @@ router.post('/', async (req, res) => {
                 name,
                 email,
                 password: hashedPassword,
-                role: role || 'STAFF', // Uses provided role or defaults to STAFF
+                role: role || 'STAFF',
                 restaurantId,
             },
         });
 
-        // Strip password before returning
+        // Send welcome email (non-blocking — don't fail if email fails)
+        sendWelcomeEmail({
+            to: email,
+            name,
+            restaurantName: restaurant.name,
+            password: defaultPassword,
+        }).catch((err) => console.error('[EMAIL] Failed to send welcome email:', err));
+
         const { password, ...userWithoutPassword } = newStaff;
         res.status(201).json(userWithoutPassword);
     } catch (error) {
@@ -62,16 +72,24 @@ router.post('/', async (req, res) => {
     }
 });
 
-/**
- * GET /:restaurantId
- * Fetches all team members registered for a specific restaurant.
- * Sorted alphabetically by name.
- */
+// ==========================================
+// GET /:restaurantId
+// Fetches all team members for a restaurant
+// ==========================================
 router.get('/:restaurantId', async (req, res) => {
     try {
         const logs = await prisma.user.findMany({
             where: { restaurantId: req.params.restaurantId },
             orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true,
+                restaurantId: true,
+            },
         });
         res.json(logs);
     } catch (error) {
@@ -80,36 +98,41 @@ router.get('/:restaurantId', async (req, res) => {
     }
 });
 
-/**
- * DELETE /:id
- * Removes a team member from the system.
- */
+// ==========================================
+// DELETE /:id
+// Removes a team member
+// ==========================================
 router.delete('/:id', async (req, res) => {
     try {
         await prisma.user.delete({ where: { id: req.params.id } });
-        res.status(204).send(); // 204 No Content for successful deletion
+        res.status(204).send();
     } catch (error) {
         console.error('Error deleting team member:', error);
         res.status(500).json({ error: 'Failed to delete team member.' });
     }
 });
 
-/**
- * PATCH /:id/role
- * Updates a user's role (ADMIN <-> STAFF).
- */
+// ==========================================
+// PATCH /:id/role
+// Updates a user's role (ADMIN <-> STAFF)
+// ==========================================
 router.patch('/:id/role', async (req, res) => {
     try {
-        const { id } = req.params;
-        const { role } = req.body;
-
-        if (role !== 'ADMIN' && role !== 'STAFF') {
-            return res.status(400).json({ error: 'Invalid role' });
+        const parsed = updateRoleSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ error: parsed.error.errors[0].message });
         }
 
         const updatedUser = await prisma.user.update({
-            where: { id },
-            data: { role },
+            where: { id: req.params.id },
+            data: { role: parsed.data.role },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                restaurantId: true,
+            },
         });
 
         res.json(updatedUser);
