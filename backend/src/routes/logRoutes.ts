@@ -211,7 +211,8 @@ router.post('/delivery', async (req, res) => {
             category,
             productName,
             supplier,
-            invoiceNumber,
+            batchCode,
+            useByDate,
             temperature,
             initials,
             comments,
@@ -226,7 +227,8 @@ router.post('/delivery', async (req, res) => {
                 category,
                 productName,
                 supplier,
-                invoiceNumber,
+                batchCode,
+                useByDate: useByDate || null,
                 temperature: parsedTemperature,
                 initials,
                 comments: comments || '',
@@ -245,14 +247,15 @@ router.post('/delivery', async (req, res) => {
  */
 router.patch('/delivery/:id', async (req, res) => {
     try {
-        const { category, productName, supplier, invoiceNumber, temperature, initials, comments } = req.body;
+        const { category, productName, supplier, batchCode, useByDate, temperature, initials, comments } = req.body;
         const log = await prisma.deliveryLog.update({
             where: { id: req.params.id },
             data: {
                 category,
                 productName,
                 supplier,
-                invoiceNumber,
+                batchCode,
+                useByDate: useByDate || null,
                 temperature: parseFloat(temperature),
                 initials,
                 comments: comments || '',

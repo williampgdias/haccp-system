@@ -17,9 +17,10 @@ export default function DeliveriesPage() {
 
     const [productName, setProductName] = useState('');
     const [supplier, setSupplier] = useState('');
-    const [invoiceNumber, setInvoiceNumber] = useState('');
+    const [batchCode, setBatchCode] = useState('');
+    const [useByDate, setUseByDate] = useState('');
     const [temperature, setTemperature] = useState('');
-    const [initialsInput, setInitialsInput] = useState('');
+    const [initialsOverride, setInitialsOverride] = useState('');
     const [commentsInput, setCommentsInput] = useState('');
 
     const restaurantId = (session?.user as any)?.restaurantId;
@@ -33,6 +34,11 @@ export default function DeliveriesPage() {
         ).toUpperCase();
     };
 
+    // Derived at render time — no useEffect needed
+    const sessionInitials = session?.user?.name ? getInitials(session.user.name) : '';
+    const initialsInput = initialsOverride || sessionInitials;
+    const setInitialsInput = setInitialsOverride;
+
     const formatIsoTo12h = (isoString: string) => {
         return new Date(isoString).toLocaleTimeString('en-US', {
             hour: 'numeric',
@@ -40,12 +46,6 @@ export default function DeliveriesPage() {
             hour12: true,
         });
     };
-
-    useEffect(() => {
-        if (session?.user?.name) {
-            setInitialsInput(getInitials(session.user.name));
-        }
-    }, [session]);
 
     const fetchData = useCallback(async () => {
         if (!restaurantId) return;
@@ -61,15 +61,16 @@ export default function DeliveriesPage() {
     }, [restaurantId]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        void fetchData();
+    }, [restaurantId]);
 
     const startEdit = (log: any) => {
         setEditingLog(log);
         setCategory(log.category);
         setProductName(log.productName);
         setSupplier(log.supplier);
-        setInvoiceNumber(log.invoiceNumber);
+        setBatchCode(log.batchCode || '');
+        setUseByDate(log.useByDate || '');
         setTemperature(String(log.temperature));
         setInitialsInput(log.initials);
         setCommentsInput(log.comments || '');
@@ -80,7 +81,8 @@ export default function DeliveriesPage() {
         setEditingLog(null);
         setProductName('');
         setSupplier('');
-        setInvoiceNumber('');
+        setBatchCode('');
+        setUseByDate('');
         setTemperature('');
         setInitialsInput(getInitials(session?.user?.name));
         setCommentsInput('');
@@ -96,7 +98,8 @@ export default function DeliveriesPage() {
             category,
             productName,
             supplier,
-            invoiceNumber,
+            batchCode,
+            useByDate: useByDate || null,
             temperature: parseFloat(temperature),
             initials: initialsInput.toUpperCase(),
             comments: commentsInput,
@@ -114,7 +117,9 @@ export default function DeliveriesPage() {
                   });
 
             if (res.ok) {
-                toast.success(editingLog ? 'Delivery updated!' : 'Delivery recorded!');
+                toast.success(
+                    editingLog ? 'Delivery updated!' : 'Delivery recorded!',
+                );
                 cancelEdit();
                 fetchData();
             }
@@ -206,16 +211,30 @@ export default function DeliveriesPage() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
-                            Invoice #
+                            Batch Code
                         </label>
                         <input
                             required
-                            placeholder="INV-001"
-                            value={invoiceNumber}
-                            onChange={(e) => setInvoiceNumber(e.target.value)}
+                            placeholder="BC-001"
+                            value={batchCode}
+                            onChange={(e) => setBatchCode(e.target.value)}
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
+                            Use By Date
+                        </label>
+                        <input
+                            type="date"
+                            value={useByDate}
+                            onChange={(e) => setUseByDate(e.target.value)}
+                            className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Temp (°C)
@@ -230,9 +249,7 @@ export default function DeliveriesPage() {
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold"
                         />
                     </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Initials
@@ -240,15 +257,20 @@ export default function DeliveriesPage() {
                         <input
                             required
                             value={initialsInput}
-                            onChange={(e) => setInitialsInput(e.target.value.toUpperCase())}
+                            onChange={(e) =>
+                                setInitialsInput(e.target.value.toUpperCase())
+                            }
                             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-slate-950 font-semi-bold uppercase"
                         />
                     </div>
-                    <div className="space-y-1">
+                </div>
+
+                <div className="w-full">
+                    <div className="space-y-1 w-full">
                         <label className="text-[10px] font-black text-slate-400 ml-1 uppercase tracking-wide block mb-1">
                             Comments
                         </label>
-                        <input
+                        <textarea
                             placeholder="Optional..."
                             value={commentsInput}
                             onChange={(e) => setCommentsInput(e.target.value)}
@@ -275,7 +297,9 @@ export default function DeliveriesPage() {
                     Recent History
                 </h3>
                 {isFetching ? (
-                    <p className="text-slate-400 text-xs animate-pulse font-medium">Loading history...</p>
+                    <p className="text-slate-400 text-xs animate-pulse font-medium">
+                        Loading history...
+                    </p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         {logs.map((log) => {
@@ -298,8 +322,13 @@ export default function DeliveriesPage() {
                                             </span>
                                         </div>
                                         <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                                            {log.supplier} • {log.invoiceNumber}
+                                            {log.supplier} • {log.batchCode}
                                         </p>
+                                        {log.useByDate && (
+                                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                                                Use by: {log.useByDate}
+                                            </p>
+                                        )}
                                         <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">
                                             By {log.initials} •{' '}
                                             {formatIsoTo12h(log.createdAt)}

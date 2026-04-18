@@ -375,12 +375,13 @@ router.get('/deliveries/:restaurantId', async (req, res) => {
         y += 75;
 
         const delCols = [
-            { text: 'Date', width: 80 },
-            { text: 'Product', width: 110 },
-            { text: 'Supplier', width: 90 },
-            { text: 'Invoice #', width: 80 },
-            { text: 'Temp (°C)', width: 70 },
-            { text: 'By', width: 65 },
+            { text: 'Date', width: 70 },
+            { text: 'Product', width: 100 },
+            { text: 'Supplier', width: 85 },
+            { text: 'Batch Code', width: 75 },
+            { text: 'Use By', width: 65 },
+            { text: 'Temp (°C)', width: 60 },
+            { text: 'By', width: 40 },
         ];
 
         y = drawTableRow(doc, y, delCols, true);
@@ -393,12 +394,13 @@ router.get('/deliveries/:restaurantId', async (req, res) => {
                 doc,
                 y,
                 [
-                    { text: date.toLocaleDateString('en-IE'), width: 80 },
-                    { text: log.productName, width: 110 },
-                    { text: log.supplier, width: 90 },
-                    { text: log.invoiceNumber, width: 80 },
-                    { text: `${log.temperature}°C`, width: 70 },
-                    { text: log.initials, width: 65 },
+                    { text: date.toLocaleDateString('en-IE'), width: 70 },
+                    { text: log.productName, width: 100 },
+                    { text: log.supplier, width: 85 },
+                    { text: log.batchCode, width: 75 },
+                    { text: log.useByDate || '—', width: 65 },
+                    { text: `${log.temperature}°C`, width: 60 },
+                    { text: log.initials, width: 40 },
                 ],
                 false,
                 i % 2 === 0,

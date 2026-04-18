@@ -106,7 +106,8 @@ model DeliveryLog {
     category            String
     productName         String
     supplier            String
-    invoiceNumber       String
+    batchCode           String?
+    useByDate           String?
     temperature         Float
     initials            String
     comments            String?
